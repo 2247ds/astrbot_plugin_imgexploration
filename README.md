@@ -88,12 +88,21 @@
 | `similarity_threshold` | 整数 | 相似度阈值 | `40` |
 | `max_results` | 整数 | 最大结果数量 | `3` |
 
+### SerpAPI（`serpapi`）
+
+SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序轮询使用；启用多个 SerpAPI 引擎后，每次无参数搜图会额外消耗相应次数的额度。
+
+| 配置项 | 类型 | 说明 | 默认值 |
+|--------|------|------|--------|
+| `api_keys` | 列表 | SerpAPI API Keys，多个 Key 轮询使用；留空时不加载任何 SerpAPI 引擎 | 空 |
+
 ### Google Lens（`google_lens`）
+
+> API Keys 已迁移到顶层 `serpapi.api_keys`。升级后请在「SerpAPI」配置中重新填写，旧 `google_lens.serpapi_keys` 不会自动迁移。
 
 | 配置项 | 类型 | 说明 | 默认值 |
 |--------|------|------|--------|
 | `enable` | 布尔值 | 启用 Google Lens | `true` |
-| `serpapi_keys` | 列表 | SerpAPI Keys，必填；未填写时不加载 Google Lens | 空 |
 | `search_type` | 字符串 | 搜索类型：综合、相似图片、精确匹配或商品 | `all` |
 | `language` | 字符串 | Google 结果语言代码 | `zh-cn` |
 | `country` | 字符串 | 两位国家代码；留空由 Google 自动决定 | 空 |
@@ -285,7 +294,10 @@
 
 1. 访问 https://serpapi.com
 2. 注册账号（免费版每月 250 次）
-3. 获取 API Key
+3. 获取 API Key，填入顶层 `serpapi.api_keys`
+
+> 从旧版本升级时，原先填写在 `google_lens.serpapi_keys` 的 Keys 不会自动迁移，
+> 需要重新填写到 `serpapi.api_keys`。
 
 查找原图或转载来源时，可将 Google Lens 的 `search_type` 设为 `exact_matches`；
 `all`、`visual_matches` 和 `products` 模式只展示相似图片结果。

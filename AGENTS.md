@@ -45,6 +45,10 @@ that repository.
   fallback behavior.
 - `core/strategy.py` and `core/providers/*_strategy.py`: provider interface and
   implementations.
+- `core/serpapi.py`: engine-independent SerpAPI transport, shared API-key
+  rotation, quota cache, and HTTP error handling.
+- `core/providers/serpapi_strategy_base.py`: shared SerpAPI strategy validation,
+  payload-error interpretation, and parse-error normalization.
 - `core/image_hosts/`: third-party image-host interface, Catbox and Uguu
   implementations, configuration factory, upload ordering, and fallback service.
 - `core/utils.py`: image resolution, upload entry point, downloads, and shared
@@ -56,6 +60,10 @@ that repository.
 - `_conf_schema.json`: plugin configuration schema.
 - `metadata.yaml`: plugin metadata.
 - `tests/helpers.py`: shared `FakeEvent` and plugin construction for tests.
+- `tests/serpapi_stub_helpers.py`: isolated module/session stubs shared by
+  SerpAPI provider tests.
+- `tests/test_serpapi_client.py`: SerpAPI key rotation, quota exhaustion,
+  transport failures, payload errors, and credential-safe logging.
 - `tests/test_plugin_imports.py`: plugin entry-point and core-layout import
   smoke checks.
 - `tests/test_image_capture.py`: component and raw-event capture behavior.

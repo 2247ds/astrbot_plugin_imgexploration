@@ -237,6 +237,14 @@ class PluginConfigurationTests(PluginTestCase):
                 )
             },
         )
+        self.assertNotIn("serpapi_keys", google_lens_items)
+
+    def test_serpapi_schema_uses_shared_keys_group(self) -> None:
+        schema_path = Path(__file__).parents[1] / "_conf_schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+
+        self.assertEqual([], schema["serpapi"]["items"]["api_keys"]["default"])
+        self.assertNotIn("serpapi_keys", schema["api_keys"]["items"])
 
     def test_llm_tool_enablement_schema_matches_runtime_default(self) -> None:
         schema_path = Path(__file__).parents[1] / "_conf_schema.json"
@@ -357,7 +365,7 @@ class PluginConfigurationTests(PluginTestCase):
             config["saucenao"],
         )
         self.assertEqual(
-            {"enable": False, "serpapi_keys": ["google_key"], "language": "ja"},
+            {"enable": False, "language": "ja"},
             config["google_lens"],
         )
         self.assertEqual(
@@ -425,9 +433,9 @@ class PluginConfigurationTests(PluginTestCase):
                 "similarity_threshold": 65,
                 "max_results": 4,
             },
+            "serpapi": {"api_keys": ["google_key1"]},
             "google_lens": {
                 "enable": True,
-                "serpapi_keys": ["google_key1"],
                 "search_type": "exact_matches",
                 "language": "ja",
                 "country": "jp",
@@ -510,7 +518,8 @@ class PluginConfigurationTests(PluginTestCase):
         # 3. All strategies disabled
         conf_disabled = {
             "saucenao": {"enable": False, "api_key": "sn_key"},
-            "google_lens": {"enable": False, "serpapi_keys": ["google_key"]},
+            "serpapi": {"api_keys": ["google_key"]},
+            "google_lens": {"enable": False},
             "ascii2d": {"enable": False, "session_id": "ascii_sess"},
         }
         with self._patch_strategy_dependencies() as dependencies:
@@ -541,7 +550,8 @@ class PluginConfigurationTests(PluginTestCase):
             with self.subTest(limits=limits):
                 config = {
                     "saucenao": {"enable": True, "api_key": "sn_key"},
-                    "google_lens": {"enable": True, "serpapi_keys": ["google_key"]},
+                    "serpapi": {"api_keys": ["google_key"]},
+                    "google_lens": {"enable": True},
                     "ascii2d": {"enable": True, "session_id": "ascii_sess"},
                 }
                 for (group, key), value in limits.items():
@@ -578,10 +588,8 @@ class PluginConfigurationTests(PluginTestCase):
     def test_build_strategies_normalizes_credentials(self) -> None:
         config = {
             "saucenao": {"enable": True, "api_key": " sn_key\n"},
-            "google_lens": {
-                "enable": True,
-                "serpapi_keys": ["", "  ", " google_key ", None],
-            },
+            "serpapi": {"api_keys": ["", "  ", " google_key ", None]},
+            "google_lens": {"enable": True},
             "ascii2d": {
                 "enable": True,
                 "session_id": " ascii_sess ",
@@ -618,7 +626,8 @@ class PluginConfigurationTests(PluginTestCase):
             with self.subTest(serpapi_keys=serpapi_keys):
                 blank_config = {
                     "saucenao": {"enable": True, "api_key": "  "},
-                    "google_lens": {"enable": True, "serpapi_keys": serpapi_keys},
+                    "serpapi": {"api_keys": serpapi_keys},
+                    "google_lens": {"enable": True},
                     "ascii2d": {"enable": True, "session_id": "\t"},
                 }
                 with self._patch_strategy_dependencies() as dependencies:
@@ -628,3 +637,28 @@ class PluginConfigurationTests(PluginTestCase):
                 dependencies["SerpApiClient"].assert_not_called()
                 dependencies["GoogleLensStrategy"].assert_not_called()
                 dependencies["Ascii2dStrategy"].assert_not_called()
+
+    def test_legacy_serpapi_keys_only_warn_without_migration(self) -> None:
+        config = {
+            "serpapi": {"api_keys": []},
+            "google_lens": {
+                "enable": True,
+                "serpapi_keys": ["legacy-key"],
+            },
+        }
+
+        with (
+            patch("astrbot_plugin_imgexploration.core.config.logger") as config_logger,
+            self._patch_strategy_dependencies() as dependencies,
+        ):
+            self.assertEqual(build_strategies(config), [])
+
+        dependencies["SerpApiClient"].assert_not_called()
+        dependencies["GoogleLensStrategy"].assert_not_called()
+        warning_messages = " ".join(
+            str(call.args[0])
+            for call in config_logger.warning.call_args_list
+            if call.args
+        )
+        self.assertIn("serpapi.api_keys", warning_messages)
+        self.assertIn("google_lens.serpapi_keys", warning_messages)

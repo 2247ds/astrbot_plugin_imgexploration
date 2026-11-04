@@ -63,7 +63,6 @@ LEGACY_ENGINE_CONFIG_KEYS = {
     ),
     ("display", "saucenao_max_results"): ("saucenao", "max_results"),
     ("strategies", "enable_google_lens"): ("google_lens", "enable"),
-    ("api_keys", "serpapi_keys"): ("google_lens", "serpapi_keys"),
     ("strategies", "google_lens_search_type"): ("google_lens", "search_type"),
     ("strategies", "google_lens_language"): ("google_lens", "language"),
     ("strategies", "google_lens_country"): ("google_lens", "country"),
@@ -316,13 +315,25 @@ def build_strategies(config: dict) -> list[ImageSearchStrategy]:
     enable_google_lens = get_nested_config(
         config, "google_lens", "enable", default=True
     )
-    serpapi_keys = get_nested_config(config, "google_lens", "serpapi_keys", default=[])
+    serpapi_keys = get_nested_config(config, "serpapi", "api_keys", default=[])
     if not isinstance(serpapi_keys, list):
         serpapi_keys = []
     # 忽略空 Key，避免只有空条目时加载一个必然失败的 Google Lens 策略
     serpapi_keys = [
         key.strip() for key in serpapi_keys if isinstance(key, str) and key.strip()
     ]
+    legacy_serpapi_keys = get_nested_config(
+        config, "google_lens", "serpapi_keys", default=[]
+    )
+    if (
+        not serpapi_keys
+        and isinstance(legacy_serpapi_keys, list)
+        and any(isinstance(key, str) and key.strip() for key in legacy_serpapi_keys)
+    ):
+        logger.warning(
+            "[ImgExploration] 检测到旧配置 google_lens.serpapi_keys 已不再生效，"
+            "请将 SerpAPI Keys 重新填写到 serpapi.api_keys"
+        )
     serpapi_client = SerpApiClient(api_keys=serpapi_keys) if serpapi_keys else None
     if enable_google_lens and serpapi_client is not None:
         strategies.append(

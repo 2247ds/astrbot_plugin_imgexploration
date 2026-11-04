@@ -34,23 +34,29 @@
       }
     }
   },
+  "serpapi": {
+    "description": "SerpAPI 配置",
+    "type": "object",
+    "hint": "所有 SerpAPI 搜图引擎共享此处的 API Keys 与搜索额度",
+    "items": {
+      "api_keys": {
+        "type": "list",
+        "description": "SerpAPI API Keys",
+        "hint": "所有 SerpAPI 引擎共享这一组 Key 与额度，多个 Key 会按顺序轮询使用。可在 serpapi.com 获取。启用多个 SerpAPI 引擎会让每次默认搜图额外消耗相应次数的额度。",
+        "default": []
+      }
+    }
+  },
   "google_lens": {
     "description": "Google Lens 配置",
     "type": "object",
-    "hint": "通用图片搜图引擎，通过 SerpAPI 调用",
+    "hint": "通用图片搜图引擎，通过 SerpAPI 调用；API Keys 由 serpapi.api_keys 统一提供",
     "items": {
       "enable": {
         "type": "bool",
         "description": "启用 Google Lens 搜索",
-        "hint": "Google Lens 可搜索通用图片，通过 SerpAPI 调用。需要配置 SerpAPI Key，未填写时不会启用。",
+        "hint": "Google Lens 可搜索通用图片，通过 SerpAPI 调用。需要先在「SerpAPI 配置」中填写 API Keys，未填写时不会启用。",
         "default": true
-      },
-      "serpapi_keys": {
-        "type": "list",
-        "description": "SerpAPI Keys (Google Lens)",
-        "hint": "SerpAPI 的 API 密钥列表，支持多个 Key 负载均衡。可在 serpapi.com 获取。留空则不使用该引擎。",
-        "default": [],
-        "condition": {"enable": true}
       },
       "search_type": {
         "type": "string",
@@ -330,12 +336,6 @@
         "description": "SauceNAO API Key",
         "hint": "SauceNAO 的 API 密钥，可在 saucenao.com/user.php?page=search-api 获取。留空则不使用该引擎。",
         "default": ""
-      },
-      "serpapi_keys": {
-        "type": "list",
-        "description": "SerpAPI Keys (Google Lens)",
-        "hint": "SerpAPI 的 API 密钥列表，支持多个 Key 负载均衡。可在 serpapi.com 获取。留空则不使用该引擎。",
-        "default": []
       },
       "ascii2d_session_id": {
         "type": "string",

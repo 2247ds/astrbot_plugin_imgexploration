@@ -8,6 +8,7 @@
 
 ### 🔄 变更
 
+- **Breaking:** SerpAPI Keys 从 `google_lens.serpapi_keys` 迁移到共享配置组 `serpapi.api_keys`，用于所有 SerpAPI 搜图引擎共享 Key 轮询与额度缓存；旧配置不会自动迁移，升级后需重新填写
 - 重构第三方图床为可扩展的 provider 架构，新增 `image_hosts.upload_chain` 配置；当前内置 Catbox 和 Uguu，缺失配置时保持原有 Catbox 行为
 
 ## [1.4.1] - 2026-10-24
