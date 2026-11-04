@@ -45,8 +45,8 @@ that repository.
   fallback behavior.
 - `core/strategy.py` and `core/providers/*_strategy.py`: provider interface and
   implementations.
-- `core/image_hosts/`: third-party image-host interface, Catbox implementation,
-  configuration factory, upload ordering, and fallback service.
+- `core/image_hosts/`: third-party image-host interface, Catbox and Uguu
+  implementations, configuration factory, upload ordering, and fallback service.
 - `core/utils.py`: image resolution, upload entry point, downloads, and shared
   HTTP resources.
 - `core/models.py`: result data classes shared by providers, the service, and
@@ -142,7 +142,7 @@ Missing metadata must not prevent image capture.
 - `allow_image_upload` is the master switch. HTTP(S) image URLs bypass uploads.
 - `image_hosts.upload_chain` selects and orders third-party upload providers.
 - Missing host configuration defaults to Catbox; an explicit empty chain loads no
-  hosts.
+  hosts. Uguu is available as `uguu`.
 - Each provider implements `ImageHost`, declares its upload limit, returns a
   validated HTTP(S) image URL, and raises `ImageHostError` for expected failures.
 - `ImageUploadService` owns ordering, fallback, URL validation, and resource

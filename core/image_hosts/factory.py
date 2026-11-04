@@ -10,9 +10,11 @@ from astrbot.api import logger
 from ..constant import DEFAULT_IMAGE_UPLOAD_CHAIN
 from .base import ImageHost
 from .catbox import CatboxHost
+from .uguu import UguuHost
 
 _IMAGE_HOST_BUILDERS = {
     "catbox": CatboxHost,
+    "uguu": UguuHost,
 }
 
 

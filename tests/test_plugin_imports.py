@@ -14,6 +14,7 @@ _EXPECTED_CORE_MODULES = (
     "astrbot_plugin_imgexploration.core.image_hosts.catbox",
     "astrbot_plugin_imgexploration.core.image_hosts.factory",
     "astrbot_plugin_imgexploration.core.image_hosts.service",
+    "astrbot_plugin_imgexploration.core.image_hosts.uguu",
     "astrbot_plugin_imgexploration.core.models",
     "astrbot_plugin_imgexploration.core.result_sender",
     "astrbot_plugin_imgexploration.core.search_cooldown",

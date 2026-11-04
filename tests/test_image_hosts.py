@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import AsyncMock, MagicMock, patch
 
+from astrbot_plugin_imgexploration.core import utils
+from astrbot_plugin_imgexploration.core.image_hosts import uguu as uguu_module
 from astrbot_plugin_imgexploration.core.image_hosts.base import (
     ImageHost,
     ImageHostError,
@@ -16,6 +19,15 @@ from astrbot_plugin_imgexploration.core.image_hosts.service import (
     get_image_upload_service,
     init_image_upload_service,
 )
+from astrbot_plugin_imgexploration.core.image_hosts.uguu import UguuHost
+
+
+class _FakeFormData:
+    def __init__(self) -> None:
+        self.fields: list[tuple[str, object, dict[str, object]]] = []
+
+    def add_field(self, name: str, value: object, **kwargs: object) -> None:
+        self.fields.append((name, value, kwargs))
 
 
 class _FakeHost(ImageHost):
@@ -146,6 +158,111 @@ class BuildImageHostsTests(unittest.TestCase):
 
         self.assertEqual(len(hosts), 1)
         self.assertIsInstance(hosts[0], CatboxHost)
+
+    def test_uguu_can_be_loaded_from_chain(self) -> None:
+        hosts = build_image_hosts({"image_hosts": {"upload_chain": ["catbox", "uguu"]}})
+
+        self.assertEqual([host.key for host in hosts], ["catbox", "uguu"])
+        self.assertIsInstance(hosts[1], UguuHost)
+
+
+class UguuHostTests(unittest.IsolatedAsyncioTestCase):
+    @staticmethod
+    def _session_returning(response: object) -> MagicMock:
+        context = AsyncMock()
+        context.__aenter__.return_value = response
+        session = MagicMock()
+        session.post.return_value = context
+        return session
+
+    async def test_upload_uses_documented_form_and_parses_json(self) -> None:
+        response = AsyncMock()
+        response.status = 200
+        response.json = AsyncMock(
+            return_value={
+                "success": True,
+                "files": [{"url": "https://files.uguu.se/example.jpg"}],
+            }
+        )
+        session = self._session_returning(response)
+
+        with (
+            patch.object(
+                utils,
+                "get_aiohttp_session",
+                new=AsyncMock(return_value=session),
+            ),
+            patch.object(uguu_module.aiohttp, "FormData", _FakeFormData),
+        ):
+            url = await UguuHost().upload(
+                b"image",
+                filename="example.jpg",
+                content_type="image/jpeg",
+            )
+
+        self.assertEqual(url, "https://files.uguu.se/example.jpg")
+        call_kwargs = session.post.call_args.kwargs
+        self.assertEqual(call_kwargs["params"], {"output": "json"})
+        form = call_kwargs["data"]
+        self.assertEqual(form.fields[0][0], "files[]")
+        self.assertEqual(form.fields[0][1], b"image")
+
+    async def test_upload_rejects_failed_or_malformed_json(self) -> None:
+        for payload in (
+            {"success": False, "description": "Rate limit"},
+            {"success": True, "files": []},
+            {"success": True, "files": [{"url": ""}]},
+            [],
+        ):
+            with self.subTest(payload=payload):
+                response = AsyncMock()
+                response.status = 200
+                response.json = AsyncMock(return_value=payload)
+                session = self._session_returning(response)
+
+                with (
+                    patch.object(
+                        utils,
+                        "get_aiohttp_session",
+                        new=AsyncMock(return_value=session),
+                    ),
+                    patch.object(uguu_module.aiohttp, "FormData", _FakeFormData),
+                    self.assertRaises(ImageHostError),
+                ):
+                    await UguuHost().upload(
+                        b"image",
+                        filename="example.jpg",
+                        content_type="image/jpeg",
+                    )
+
+    async def test_upload_rejects_http_error_and_oversized_file(self) -> None:
+        response = AsyncMock()
+        response.status = 500
+        session = self._session_returning(response)
+
+        with (
+            patch.object(
+                utils,
+                "get_aiohttp_session",
+                new=AsyncMock(return_value=session),
+            ),
+            patch.object(uguu_module.aiohttp, "FormData", _FakeFormData),
+            self.assertRaises(ImageHostError),
+        ):
+            await UguuHost().upload(
+                b"image",
+                filename="example.jpg",
+                content_type="image/jpeg",
+            )
+
+        large_bytes = MagicMock()
+        large_bytes.__len__.return_value = 129 * 1024 * 1024
+        with self.assertRaises(ImageHostError):
+            await UguuHost().upload(
+                large_bytes,
+                filename="example.jpg",
+                content_type="image/jpeg",
+            )
 
 
 class GlobalImageUploadServiceTests(unittest.IsolatedAsyncioTestCase):

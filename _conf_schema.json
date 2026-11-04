@@ -313,7 +313,7 @@
       "upload_chain": {
         "type": "list",
         "description": "图床上传顺序",
-        "hint": "按顺序尝试图床，单个图床失败后使用下一个；当前支持 catbox。留空表示不加载图床，仍受 allow_image_upload 总开关限制。",
+        "hint": "按顺序尝试图床，单个图床失败后使用下一个；当前支持 catbox、uguu。留空表示不加载图床，仍受 allow_image_upload 总开关限制。",
         "default": [
           "catbox"
         ]
