@@ -21,6 +21,7 @@ from astrbot_plugin_imgexploration.core.constant import (
     DEFAULT_ALLOW_LOCAL_FILE_ACCESS,
     DEFAULT_ASCII2D_BOVW_MAX_RESULTS,
     DEFAULT_ASCII2D_COLOR_MAX_RESULTS,
+    DEFAULT_ENABLE_YANDEX_IMAGES,
     DEFAULT_GOOGLE_LENS_AUTO_CROP,
     DEFAULT_GOOGLE_LENS_COUNTRY,
     DEFAULT_GOOGLE_LENS_LANGUAGE,
@@ -36,6 +37,11 @@ from astrbot_plugin_imgexploration.core.constant import (
     DEFAULT_SAUCENAO_MAX_RESULTS,
     DEFAULT_SAUCENAO_SIMILARITY_THRESHOLD,
     DEFAULT_TRACE_MOE_MAX_RESULTS,
+    DEFAULT_YANDEX_IMAGES_DOMAIN,
+    DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
+    DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
+    DEFAULT_YANDEX_IMAGES_NO_CACHE,
+    DEFAULT_YANDEX_IMAGES_TAB,
 )
 
 from tests.helpers import PluginTestCase
@@ -79,6 +85,7 @@ class PluginConfigurationTests(PluginTestCase):
             init_image_upload_service=DEFAULT,
             SauceNaoStrategy=DEFAULT,
             GoogleLensStrategy=DEFAULT,
+            YandexImagesStrategy=DEFAULT,
             Ascii2dStrategy=DEFAULT,
             SerpApiClient=DEFAULT,
         )
@@ -140,6 +147,7 @@ class PluginConfigurationTests(PluginTestCase):
         expected = {
             ("saucenao", "max_results"): DEFAULT_SAUCENAO_MAX_RESULTS,
             ("google_lens", "max_results"): DEFAULT_GOOGLE_LENS_MAX_RESULTS,
+            ("yandex_images", "max_results"): DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
             ("ascii2d", "bovw_max_results"): DEFAULT_ASCII2D_BOVW_MAX_RESULTS,
             ("ascii2d", "color_max_results"): DEFAULT_ASCII2D_COLOR_MAX_RESULTS,
             ("trace_moe", "max_results"): DEFAULT_TRACE_MOE_MAX_RESULTS,
@@ -238,6 +246,30 @@ class PluginConfigurationTests(PluginTestCase):
             },
         )
         self.assertNotIn("serpapi_keys", google_lens_items)
+
+    def test_yandex_images_schema_matches_runtime_defaults(self) -> None:
+        schema_path = Path(__file__).parents[1] / "_conf_schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        yandex_items = schema["yandex_images"]["items"]
+
+        self.assertEqual(["about", "similar"], yandex_items["tab"]["options"])
+        self.assertEqual(
+            ["off", "moderate", "strict"], yandex_items["family_mode"]["options"]
+        )
+        self.assertEqual(
+            {
+                "enable": DEFAULT_ENABLE_YANDEX_IMAGES,
+                "tab": DEFAULT_YANDEX_IMAGES_TAB,
+                "family_mode": DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
+                "yandex_domain": DEFAULT_YANDEX_IMAGES_DOMAIN,
+                "no_cache": DEFAULT_YANDEX_IMAGES_NO_CACHE,
+            },
+            {
+                key: yandex_items[key]["default"]
+                for key in ("enable", "tab", "family_mode", "yandex_domain", "no_cache")
+            },
+        )
+        self.assertFalse(yandex_items["enable"]["default"])
 
     def test_serpapi_schema_uses_shared_keys_group(self) -> None:
         schema_path = Path(__file__).parents[1] / "_conf_schema.json"
@@ -662,3 +694,88 @@ class PluginConfigurationTests(PluginTestCase):
         )
         self.assertIn("serpapi.api_keys", warning_messages)
         self.assertIn("google_lens.serpapi_keys", warning_messages)
+
+    def test_yandex_images_shares_serpapi_client_with_google_lens(self) -> None:
+        config = {
+            "serpapi": {"api_keys": ["serp_key"]},
+            "google_lens": {"enable": True},
+            "yandex_images": {
+                "enable": True,
+                "tab": "similar",
+                "family_mode": "strict",
+                "yandex_domain": "yandex.ru",
+                "no_cache": True,
+                "max_results": 2,
+            },
+            "ascii2d": {"enable": True, "session_id": "ascii_sess"},
+        }
+
+        with self._patch_strategy_dependencies() as dependencies:
+            strategies = build_strategies(config)
+
+        dependencies["SerpApiClient"].assert_called_once_with(api_keys=["serp_key"])
+        shared_client = dependencies["SerpApiClient"].return_value
+        dependencies["GoogleLensStrategy"].assert_called_once()
+        self.assertIs(
+            shared_client,
+            dependencies["GoogleLensStrategy"].call_args.kwargs["serpapi_client"],
+        )
+        dependencies["YandexImagesStrategy"].assert_called_once_with(
+            serpapi_client=shared_client,
+            max_results=2,
+            tab="similar",
+            family_mode="strict",
+            yandex_domain="yandex.ru",
+            no_cache=True,
+        )
+        self.assertEqual(
+            strategies,
+            [
+                dependencies["GoogleLensStrategy"].return_value,
+                dependencies["YandexImagesStrategy"].return_value,
+                dependencies["Ascii2dStrategy"].return_value,
+            ],
+        )
+
+    def test_yandex_images_uses_defaults_when_options_missing(self) -> None:
+        config = {
+            "serpapi": {"api_keys": ["serp_key"]},
+            "google_lens": {"enable": False},
+            "yandex_images": {"enable": True, "max_results": 0},
+        }
+
+        with self._patch_strategy_dependencies() as dependencies:
+            strategies = build_strategies(config)
+
+        dependencies["GoogleLensStrategy"].assert_not_called()
+        dependencies["YandexImagesStrategy"].assert_called_once_with(
+            serpapi_client=dependencies["SerpApiClient"].return_value,
+            max_results=DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
+            tab=DEFAULT_YANDEX_IMAGES_TAB,
+            family_mode=DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
+            yandex_domain=DEFAULT_YANDEX_IMAGES_DOMAIN,
+            no_cache=DEFAULT_YANDEX_IMAGES_NO_CACHE,
+        )
+        self.assertEqual(
+            strategies, [dependencies["YandexImagesStrategy"].return_value]
+        )
+
+    def test_yandex_images_is_not_loaded_when_disabled_or_without_keys(self) -> None:
+        cases = (
+            {"serpapi": {"api_keys": ["serp_key"]}},
+            {"serpapi": {"api_keys": ["serp_key"]}, "yandex_images": {"enable": False}},
+            {
+                "serpapi": {"api_keys": ["serp_key"]},
+                "yandex_images": {"enable": "true"},
+            },
+            {"serpapi": {"api_keys": []}, "yandex_images": {"enable": True}},
+            {"yandex_images": {"enable": True}},
+        )
+
+        for config in cases:
+            with self.subTest(config=config):
+                config = {**config, "google_lens": {"enable": False}}
+                with self._patch_strategy_dependencies() as dependencies:
+                    self.assertEqual(build_strategies(config), [])
+
+                dependencies["YandexImagesStrategy"].assert_not_called()

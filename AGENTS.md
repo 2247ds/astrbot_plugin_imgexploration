@@ -49,6 +49,9 @@ that repository.
   rotation, quota cache, and HTTP error handling.
 - `core/providers/serpapi_strategy_base.py`: shared SerpAPI strategy validation,
   payload-error interpretation, and parse-error normalization.
+- `core/providers/google_lens_strategy.py` and
+  `core/providers/yandex_images_strategy.py`: SerpAPI engine strategies that
+  only build engine parameters and parse engine responses.
 - `core/image_hosts/`: third-party image-host interface, Catbox and Uguu
   implementations, configuration factory, upload ordering, and fallback service.
 - `core/utils.py`: image resolution, upload entry point, downloads, and shared
@@ -91,8 +94,9 @@ that repository.
 - `tests/test_image_hosts.py`: upload-chain configuration, provider ordering,
   fallback, URL validation, limits, and cleanup.
 - `tests/test_sauce_nao_strategy.py`, `tests/test_google_lens_strategy.py`,
-  `tests/test_ascii2d_strategy.py`, and `tests/test_trace_moe_strategy.py`:
-  provider requests, parsing, limits, and failures.
+  `tests/test_yandex_images_strategy.py`, `tests/test_ascii2d_strategy.py`,
+  and `tests/test_trace_moe_strategy.py`: provider requests, parsing, limits,
+  and failures.
 - `tests/test_trace_moe_integration.py`: trace.moe enablement, default
   inclusion, and command and LLM-tool flows.
 

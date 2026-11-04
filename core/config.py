@@ -13,6 +13,7 @@ from .constant import (
     DEFAULT_ASCII2D_BOVW_MAX_RESULTS,
     DEFAULT_ASCII2D_COLOR_MAX_RESULTS,
     DEFAULT_ENABLE_TRACE_MOE,
+    DEFAULT_ENABLE_YANDEX_IMAGES,
     DEFAULT_GOOGLE_LENS_AUTO_CROP,
     DEFAULT_GOOGLE_LENS_COUNTRY,
     DEFAULT_GOOGLE_LENS_LANGUAGE,
@@ -29,6 +30,11 @@ from .constant import (
     DEFAULT_TRACE_MOE_CUT_BORDERS,
     DEFAULT_TRACE_MOE_MAX_RESULTS,
     DEFAULT_TRACE_MOE_SIMILARITY_THRESHOLD,
+    DEFAULT_YANDEX_IMAGES_DOMAIN,
+    DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
+    DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
+    DEFAULT_YANDEX_IMAGES_NO_CACHE,
+    DEFAULT_YANDEX_IMAGES_TAB,
 )
 from .image_context import init_image_context_manager
 from .image_hosts import build_image_hosts, init_image_upload_service
@@ -36,6 +42,7 @@ from .providers.ascii2d_strategy import Ascii2dStrategy
 from .providers.google_lens_strategy import GoogleLensStrategy
 from .providers.sauce_nao_strategy import SauceNaoStrategy
 from .providers.trace_moe_strategy import TraceMoeStrategy
+from .providers.yandex_images_strategy import YandexImagesStrategy
 from .serpapi import SerpApiClient
 from .strategy import ImageSearchStrategy
 from .utils import set_allow_image_upload, set_allow_local_file_access, set_proxy_url
@@ -318,7 +325,7 @@ def build_strategies(config: dict) -> list[ImageSearchStrategy]:
     serpapi_keys = get_nested_config(config, "serpapi", "api_keys", default=[])
     if not isinstance(serpapi_keys, list):
         serpapi_keys = []
-    # 忽略空 Key，避免只有空条目时加载一个必然失败的 Google Lens 策略
+    # 忽略空 Key，避免只有空条目时加载一个必然失败的 SerpAPI 策略
     serpapi_keys = [
         key.strip() for key in serpapi_keys if isinstance(key, str) and key.strip()
     ]
@@ -386,6 +393,53 @@ def build_strategies(config: dict) -> list[ImageSearchStrategy]:
         logger.warning("[ImgExploration] SerpAPI Keys 未配置，跳过 Google Lens 策略")
     else:
         logger.info("[ImgExploration] Google Lens 策略已禁用")
+
+    # Yandex Images (SerpAPI)，与 Google Lens 共用同一个客户端
+    enable_yandex_images = (
+        get_nested_config(
+            config, "yandex_images", "enable", default=DEFAULT_ENABLE_YANDEX_IMAGES
+        )
+        is True
+    )
+    if enable_yandex_images and serpapi_client is not None:
+        strategies.append(
+            YandexImagesStrategy(
+                serpapi_client=serpapi_client,
+                max_results=normalize_result_limit(
+                    get_nested_config(config, "yandex_images", "max_results"),
+                    DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
+                ),
+                tab=get_nested_config(
+                    config,
+                    "yandex_images",
+                    "tab",
+                    default=DEFAULT_YANDEX_IMAGES_TAB,
+                ),
+                family_mode=get_nested_config(
+                    config,
+                    "yandex_images",
+                    "family_mode",
+                    default=DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
+                ),
+                yandex_domain=get_nested_config(
+                    config,
+                    "yandex_images",
+                    "yandex_domain",
+                    default=DEFAULT_YANDEX_IMAGES_DOMAIN,
+                ),
+                no_cache=get_nested_config(
+                    config,
+                    "yandex_images",
+                    "no_cache",
+                    default=DEFAULT_YANDEX_IMAGES_NO_CACHE,
+                ),
+            )
+        )
+        logger.info("[ImgExploration] 已加载 Yandex Images 策略")
+    elif enable_yandex_images:
+        logger.warning("[ImgExploration] SerpAPI Keys 未配置，跳过 Yandex Images 策略")
+    else:
+        logger.info("[ImgExploration] Yandex Images 策略已禁用")
 
     # Ascii2d
     enable_ascii2d = get_nested_config(config, "ascii2d", "enable", default=True)

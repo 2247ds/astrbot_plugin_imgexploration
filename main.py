@@ -59,7 +59,7 @@ class ImgExplorationPlugin(Star):
     功能:
     - 命令消息附图或回复图片消息发送 "/搜图" 触发搜索
     - 无图命令可等待同一发送者随后发送图片
-    - 支持 SauceNAO、Google Lens、Ascii2d 搜索引擎
+    - 支持 SauceNAO、Google Lens、Yandex Images、Ascii2d、trace.moe 搜索引擎
     - aiocqhttp 平台使用合并转发消息展示结果
     - 其他平台使用单条消息链展示结果
     - 支持 LLM 工具调用，让 AI 帮助用户搜图
@@ -356,7 +356,7 @@ class ImgExplorationPlugin(Star):
 
         Args:
             image_index(int): Optional explicit image index; omit it when using image_id. -1 = most recent image, 1 = first/oldest image.
-            strategies(string): Usually omit this so the plugin uses its configured default engines. Set it only when the user explicitly names engines, as comma-separated names: saucenao, google, ascii2d, anime. Use anime only when the user explicitly asks which anime, episode, or timestamp a screenshot is from. Engines that are not enabled return an error listing the available ones.
+            strategies(string): Usually omit this so the plugin uses its configured default engines. Set it only when the user explicitly names engines, as comma-separated names: saucenao, google, yandex, ascii2d, anime. Use anime only when the user explicitly asks which anime, episode, or timestamp a screenshot is from. Engines that are not enabled return an error listing the available ones.
             image_id(string): Optional stable image ID returned by get_session_images. Higher priority than image_index.
 
         Returns:
@@ -631,13 +631,14 @@ class ImgExplorationPlugin(Star):
         - 搜图 (无参数): 使用默认策略搜索
         - 搜图 saucenao: 只使用 SauceNAO 搜索
         - 搜图 google: 只使用 Google Lens 搜索
+        - 搜图 yandex: 只使用 Yandex Images 搜索（需先启用）
         - 搜图 ascii2d: 只使用 Ascii2d 搜索
         - 搜图 anime: 只使用 trace.moe 搜索（需先启用）
         - 搜图 saucenao,google: 使用多个指定策略
           (可用英文逗号、中文逗号、顿号或空格分隔)
 
         别名: sauce=saucenao, 2d=ascii2d, lens=google,
-        trace/tracemoe/whatanime=anime
+        yandeximages=yandex, trace/tracemoe/whatanime=anime
         """
         results = self._command_search_results(event, event.message_str)
         try:

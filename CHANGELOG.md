@@ -4,6 +4,7 @@
 
 ### ✨ 新增
 
+- 新增 Yandex Images 搜图引擎（通过 SerpAPI）：`搜图 yandex` 可查找图片出处或相似图片，支持配置标签页、安全搜索、Yandex 域名和结果数量；默认关闭，启用后与 Google Lens 共用 `serpapi.api_keys` 并参与无参数搜图
 - 新增 Uguu 图床上传支持；单文件上限 128 MiB，上传文件默认保留 3 小时
 
 ### 🔄 变更

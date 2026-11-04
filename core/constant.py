@@ -80,6 +80,22 @@ DEFAULT_GOOGLE_LENS_AUTO_CROP = False
 DEFAULT_GOOGLE_LENS_NO_CACHE = False
 
 # ==============================================================================
+# Yandex Images 策略
+# ==============================================================================
+
+# Yandex Images 默认关闭，避免升级后默认搜图额外消耗 SerpAPI 额度
+DEFAULT_ENABLE_YANDEX_IMAGES = False
+
+# Yandex Images 默认结果上限
+DEFAULT_YANDEX_IMAGES_MAX_RESULTS = 5
+
+# Yandex Images 搜索选项默认值；family_mode 与 SerpAPI 默认的 moderate 一致
+DEFAULT_YANDEX_IMAGES_TAB = "about"
+DEFAULT_YANDEX_IMAGES_FAMILY_MODE = "moderate"
+DEFAULT_YANDEX_IMAGES_DOMAIN = ""
+DEFAULT_YANDEX_IMAGES_NO_CACHE = False
+
+# ==============================================================================
 # Ascii2d 策略
 # ==============================================================================
 
@@ -116,6 +132,8 @@ STRATEGY_ALIAS_MAP = {
     "googlelens": "Google Lens",
     # 命令参数按空白分隔时，“Google Lens” 会被拆成 google 和 lens
     "lens": "Google Lens",
+    "yandex": "Yandex Images",
+    "yandeximages": "Yandex Images",
     "ascii2d": "Ascii2d",
     "ascii": "Ascii2d",
     "2d": "Ascii2d",

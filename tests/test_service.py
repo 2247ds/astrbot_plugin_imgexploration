@@ -90,19 +90,30 @@ class ImgExplorationServiceTests(unittest.IsolatedAsyncioTestCase):
         strat_sauce = DummyStrategy("SauceNAO")
         strat_ascii = DummyStrategy("Ascii2d")
         strat_lens = DummyStrategy("Google Lens")
-        service = ImgExplorationService([strat_sauce, strat_ascii, strat_lens])
+        strat_yandex = DummyStrategy("Yandex Images")
+        service = ImgExplorationService(
+            [strat_sauce, strat_ascii, strat_lens, strat_yandex]
+        )
 
         # None or empty returns all
         resolved_all, not_found_all = service.resolve_strategy_names(None)
-        self.assertEqual(resolved_all, [strat_sauce, strat_ascii, strat_lens])
+        self.assertEqual(
+            resolved_all, [strat_sauce, strat_ascii, strat_lens, strat_yandex]
+        )
         self.assertEqual(not_found_all, [])
 
         # Alias resolution, case insensitivity, and deduplication
         resolved, not_found = service.resolve_strategy_names(
-            ["sauce", "ascii", "google", "sauce", "unknown_strat"]
+            ["sauce", "ascii", "google", "sauce", "unknown_strat", "Yandex"]
         )
-        self.assertEqual(resolved, [strat_sauce, strat_ascii, strat_lens])
+        self.assertEqual(resolved, [strat_sauce, strat_ascii, strat_lens, strat_yandex])
         self.assertEqual(not_found, ["unknown_strat"])
+
+        resolved, not_found = service.resolve_strategy_names(
+            ["yandeximages", "yandex images"]
+        )
+        self.assertEqual(resolved, [strat_yandex])
+        self.assertEqual(not_found, [])
 
     async def test_explore_with_invalid_or_missing_strategies(self) -> None:
         strat_a = DummyStrategy("SauceNAO")

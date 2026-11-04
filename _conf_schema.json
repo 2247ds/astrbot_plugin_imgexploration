@@ -115,6 +115,56 @@
       }
     }
   },
+  "yandex_images": {
+    "description": "Yandex Images 配置",
+    "type": "object",
+    "hint": "Yandex 反向搜图引擎，通过 SerpAPI 调用；API Keys 由 serpapi.api_keys 统一提供，默认关闭",
+    "items": {
+      "enable": {
+        "type": "bool",
+        "description": "启用 Yandex Images 搜索",
+        "hint": "默认关闭。启用后无参数搜图会额外消耗一次 SerpAPI 额度，也可用「搜图 yandex」单独调用。需要先在「SerpAPI 配置」中填写 API Keys，未填写时不会启用。",
+        "default": false
+      },
+      "tab": {
+        "type": "string",
+        "description": "Yandex Images 结果标签页",
+        "hint": "about 查找图片出处和相关页面；similar 只返回相似图片，而不是出处。",
+        "default": "about",
+        "options": ["about", "similar"],
+        "condition": {"enable": true}
+      },
+      "family_mode": {
+        "type": "string",
+        "description": "Yandex Images 安全搜索",
+        "hint": "off 关闭过滤；moderate 为 Yandex 默认的适中过滤；strict 严格过滤成人内容。默认 moderate。",
+        "default": "moderate",
+        "options": ["off", "moderate", "strict"],
+        "condition": {"enable": true}
+      },
+      "yandex_domain": {
+        "type": "string",
+        "description": "Yandex 域名",
+        "hint": "例如 yandex.ru、yandex.com.tr。留空时由 SerpAPI 决定（通常为 yandex.com）。",
+        "default": "",
+        "condition": {"enable": true}
+      },
+      "no_cache": {
+        "type": "bool",
+        "description": "Yandex Images 绕过缓存",
+        "hint": "启用后强制 SerpAPI 获取新结果，不使用最长一小时的免费缓存；每次都会消耗搜索额度。",
+        "default": false,
+        "condition": {"enable": true}
+      },
+      "max_results": {
+        "type": "int",
+        "description": "Yandex Images 最大结果数",
+        "hint": "必须大于 0；留空或无效时使用默认值 5。",
+        "default": 5,
+        "condition": {"enable": true}
+      }
+    }
+  },
   "ascii2d": {
     "description": "Ascii2d 配置",
     "type": "object",

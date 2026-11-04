@@ -26,6 +26,7 @@ _EXPECTED_CORE_MODULES = (
     "astrbot_plugin_imgexploration.core.providers.google_lens_strategy",
     "astrbot_plugin_imgexploration.core.providers.sauce_nao_strategy",
     "astrbot_plugin_imgexploration.core.providers.serpapi_strategy_base",
+    "astrbot_plugin_imgexploration.core.providers.yandex_images_strategy",
 )
 
 

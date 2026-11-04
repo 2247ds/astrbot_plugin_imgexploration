@@ -111,6 +111,19 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 | `no_cache` | 布尔值 | 绕过 SerpAPI 一小时缓存 | `false` |
 | `max_results` | 整数 | 最大结果数量 | `5` |
 
+### Yandex Images（`yandex_images`）
+
+通过 SerpAPI 调用 Yandex 反向搜图，与 Google Lens 共用 `serpapi.api_keys`。默认关闭；启用后无参数搜图会额外消耗一次 SerpAPI 额度。
+
+| 配置项 | 类型 | 说明 | 默认值 |
+|--------|------|------|--------|
+| `enable` | 布尔值 | 启用 Yandex Images | `false` |
+| `tab` | 字符串 | 结果标签页：`about` 查找图片出处，`similar` 只返回相似图片 | `about` |
+| `family_mode` | 字符串 | 安全搜索：`off`、`moderate`、`strict` | `moderate` |
+| `yandex_domain` | 字符串 | Yandex 域名，例如 `yandex.ru`；留空由 SerpAPI 决定 | 空 |
+| `no_cache` | 布尔值 | 绕过 SerpAPI 一小时缓存 | `false` |
+| `max_results` | 整数 | 最大结果数量 | `5` |
+
 ### Ascii2d（`ascii2d`）
 
 | 配置项 | 类型 | 说明 | 默认值 |
@@ -182,7 +195,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 
 ### 图床上传
 
-当搜图引擎需要 HTTP URL 时（如 SauceNAO、Google Lens、trace.moe），如果用户发送的是本地文件、`file://` 路径或 `base64` 图片，插件会按 `upload_chain` 顺序将图片上传到第三方图床以获取公开可访问的 URL。当前内置图床为 **Catbox (catbox.moe)** 和 **Uguu (uguu.se)**。Uguu 单文件最大 128 MiB，上传文件默认保留 3 小时。
+当搜图引擎需要 HTTP URL 时（如 SauceNAO、Google Lens、Yandex Images、trace.moe），如果用户发送的是本地文件、`file://` 路径或 `base64` 图片，插件会按 `upload_chain` 顺序将图片上传到第三方图床以获取公开可访问的 URL。当前内置图床为 **Catbox (catbox.moe)** 和 **Uguu (uguu.se)**。Uguu 单文件最大 128 MiB，上传文件默认保留 3 小时。
 
 **这意味着：**
 - 图片内容会暴露给配置的第三方图床
@@ -211,6 +224,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 搜图
 搜图 saucenao
 搜图 google
+搜图 yandex
 搜图 ascii2d
 搜图 anime
 搜图 saucenao,google
@@ -238,6 +252,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 - `sauce` = `saucenao`
 - `2d` = `ascii2d`
 - `lens` = `google`
+- `yandeximages` = `yandex`
 - `trace`、`tracemoe`、`whatanime` = `anime`
 
 ### trace.moe
@@ -290,7 +305,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 2. 注册/登录账号
 3. 获取 API Key
 
-### SerpAPI（Google Lens）
+### SerpAPI（Google Lens、Yandex Images）
 
 1. 访问 https://serpapi.com
 2. 注册账号（免费版每月 250 次）
@@ -301,6 +316,9 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 
 查找原图或转载来源时，可将 Google Lens 的 `search_type` 设为 `exact_matches`；
 `all`、`visual_matches` 和 `products` 模式只展示相似图片结果。
+
+Yandex Images 默认关闭，需将 `yandex_images.enable` 设为 `true`，并与 Google Lens
+共用同一组 Keys 和额度；`tab` 为 `about` 时查找出处，为 `similar` 时只返回相似图片。
 
 ### Ascii2d
 
@@ -327,6 +345,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 |------|------|----------|
 | **SauceNAO** | 动漫图片专精，支持 Pixiv、Danbooru 等数据库 | 动漫插画、二次元图片 |
 | **Google Lens** | 通用图片搜索，覆盖面广 | 通用图片、商品、风景 |
+| **Yandex Images** | Yandex 反向搜图，可查找图片出处或相似图片，默认关闭 | 通用图片、俄语和欧洲站点来源 |
 | **Ascii2d** | 二次元插画搜索；色合检索匹配整体配色，特征检索可找到裁剪或修改过的图片 | 动漫插画、Pixiv/X 来源 |
 | **trace.moe** | 按动画画面定位番剧、集数和时间点，默认关闭 | 动画截图 |
 
@@ -365,6 +384,6 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 
 - [AstrBot](https://github.com/AstrBotDevs/AstrBot) - 强大的 AI 助手框架
 - [SauceNAO](https://saucenao.com) - 动漫图片搜索引擎
-- [SerpAPI](https://serpapi.com) - Google Lens API 服务
+- [SerpAPI](https://serpapi.com) - Google Lens、Yandex Images API 服务
 - [Ascii2d](https://ascii2d.net) - 日本图片搜索网站
 - [trace.moe](https://trace.moe) - 动画截图搜索引擎
