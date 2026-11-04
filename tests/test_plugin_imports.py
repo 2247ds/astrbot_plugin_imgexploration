@@ -18,12 +18,14 @@ _EXPECTED_CORE_MODULES = (
     "astrbot_plugin_imgexploration.core.models",
     "astrbot_plugin_imgexploration.core.result_sender",
     "astrbot_plugin_imgexploration.core.search_cooldown",
+    "astrbot_plugin_imgexploration.core.serpapi",
     "astrbot_plugin_imgexploration.core.service",
     "astrbot_plugin_imgexploration.core.strategy",
     "astrbot_plugin_imgexploration.core.utils",
     "astrbot_plugin_imgexploration.core.providers.ascii2d_strategy",
     "astrbot_plugin_imgexploration.core.providers.google_lens_strategy",
     "astrbot_plugin_imgexploration.core.providers.sauce_nao_strategy",
+    "astrbot_plugin_imgexploration.core.providers.serpapi_strategy_base",
 )
 
 

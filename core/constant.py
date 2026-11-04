@@ -55,11 +55,18 @@ DEFAULT_SAUCENAO_MAX_RESULTS = 3
 DEFAULT_SAUCENAO_SIMILARITY_THRESHOLD = 40
 
 # ==============================================================================
-# Google Lens 策略
+# SerpAPI 通用
 # ==============================================================================
 
 # SerpAPI 基础 URL
 SERPAPI_BASE_URL = "https://serpapi.com"
+
+# SerpAPI 额度耗尽缓存 TTL（秒）
+QUOTA_CACHE_TTL = 60
+
+# ==============================================================================
+# Google Lens 策略
+# ==============================================================================
 
 # Google Lens 默认结果上限
 DEFAULT_GOOGLE_LENS_MAX_RESULTS = 5

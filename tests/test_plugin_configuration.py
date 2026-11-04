@@ -80,6 +80,7 @@ class PluginConfigurationTests(PluginTestCase):
             SauceNaoStrategy=DEFAULT,
             GoogleLensStrategy=DEFAULT,
             Ascii2dStrategy=DEFAULT,
+            SerpApiClient=DEFAULT,
         )
 
     def test_config_to_dict_conversion(self) -> None:
@@ -203,9 +204,8 @@ class PluginConfigurationTests(PluginTestCase):
 
     def test_google_lens_schema_matches_runtime_defaults(self) -> None:
         schema_path = Path(__file__).parents[1] / "_conf_schema.json"
-        google_lens_items = json.loads(schema_path.read_text(encoding="utf-8"))[
-            "google_lens"
-        ]["items"]
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        google_lens_items = schema["google_lens"]["items"]
 
         self.assertEqual(
             [
@@ -467,8 +467,9 @@ class PluginConfigurationTests(PluginTestCase):
             similarity_threshold=65,
             max_results=4,
         )
+        dependencies["SerpApiClient"].assert_called_once_with(api_keys=["google_key1"])
         dependencies["GoogleLensStrategy"].assert_called_once_with(
-            api_keys=["google_key1"],
+            serpapi_client=dependencies["SerpApiClient"].return_value,
             max_results=6,
             search_type="exact_matches",
             language="ja",
@@ -502,6 +503,7 @@ class PluginConfigurationTests(PluginTestCase):
             self.assertEqual(build_strategies(conf_missing_keys), [])
 
         dependencies["SauceNaoStrategy"].assert_not_called()
+        dependencies["SerpApiClient"].assert_not_called()
         dependencies["GoogleLensStrategy"].assert_not_called()
         dependencies["Ascii2dStrategy"].assert_not_called()
 
@@ -553,8 +555,11 @@ class PluginConfigurationTests(PluginTestCase):
                     similarity_threshold=40,
                     max_results=DEFAULT_SAUCENAO_MAX_RESULTS,
                 )
+                dependencies["SerpApiClient"].assert_called_once_with(
+                    api_keys=["google_key"]
+                )
                 dependencies["GoogleLensStrategy"].assert_called_once_with(
-                    api_keys=["google_key"],
+                    serpapi_client=dependencies["SerpApiClient"].return_value,
                     max_results=DEFAULT_GOOGLE_LENS_MAX_RESULTS,
                     search_type="all",
                     language="zh-cn",
@@ -591,8 +596,9 @@ class PluginConfigurationTests(PluginTestCase):
             similarity_threshold=40,
             max_results=DEFAULT_SAUCENAO_MAX_RESULTS,
         )
+        dependencies["SerpApiClient"].assert_called_once_with(api_keys=["google_key"])
         dependencies["GoogleLensStrategy"].assert_called_once_with(
-            api_keys=["google_key"],
+            serpapi_client=dependencies["SerpApiClient"].return_value,
             max_results=DEFAULT_GOOGLE_LENS_MAX_RESULTS,
             search_type="all",
             language="zh-cn",
@@ -619,5 +625,6 @@ class PluginConfigurationTests(PluginTestCase):
                     self.assertEqual(build_strategies(blank_config), [])
 
                 dependencies["SauceNaoStrategy"].assert_not_called()
+                dependencies["SerpApiClient"].assert_not_called()
                 dependencies["GoogleLensStrategy"].assert_not_called()
                 dependencies["Ascii2dStrategy"].assert_not_called()

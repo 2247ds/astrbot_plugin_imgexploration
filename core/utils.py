@@ -53,6 +53,19 @@ SENSITIVE_QUERY_PARAMS = frozenset(
 )
 
 
+def normalize_bool(value: object, *, default: bool) -> bool:
+    """将配置值规范化为布尔值，无效值回退到默认值."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+    return default
+
+
 def _sanitize_url_for_logging(url: str) -> str:
     """清理 URL 中的敏感信息，用于日志输出.
 

@@ -19,6 +19,7 @@ from astrbot_plugin_imgexploration.core.providers.google_lens_strategy import (
 from astrbot_plugin_imgexploration.core.providers.sauce_nao_strategy import (
     SauceNaoStrategy,
 )
+from astrbot_plugin_imgexploration.core.serpapi import SerpApiClient
 from astrbot_plugin_imgexploration.core.service import ImgExplorationService
 
 from .helpers import FakeEvent, PluginTestCase
@@ -179,15 +180,16 @@ class LoggingPolicyTests(PluginTestCase):
 
     async def test_google_lens_errors_do_not_log_api_keys(self) -> None:
         api_keys = ["serpapi-secret-one", "serpapi-secret-two"]
-        service = ImgExplorationService([GoogleLensStrategy(api_keys=api_keys)])
+        client = SerpApiClient(api_keys=api_keys)
+        service = ImgExplorationService([GoogleLensStrategy(serpapi_client=client)])
 
         with (
             patch(
-                "astrbot_plugin_imgexploration.core.providers.google_lens_strategy.get_aiohttp_session",
+                "astrbot_plugin_imgexploration.core.serpapi.get_aiohttp_session",
                 new=AsyncMock(return_value=_UrlLeakingSession()),
             ),
             patch(
-                "astrbot_plugin_imgexploration.core.providers.google_lens_strategy.logger"
+                "astrbot_plugin_imgexploration.core.serpapi.logger"
             ) as provider_logger,
             patch(
                 "astrbot_plugin_imgexploration.core.service.logger"

@@ -36,6 +36,7 @@ from .providers.ascii2d_strategy import Ascii2dStrategy
 from .providers.google_lens_strategy import GoogleLensStrategy
 from .providers.sauce_nao_strategy import SauceNaoStrategy
 from .providers.trace_moe_strategy import TraceMoeStrategy
+from .serpapi import SerpApiClient
 from .strategy import ImageSearchStrategy
 from .utils import set_allow_image_upload, set_allow_local_file_access, set_proxy_url
 
@@ -322,10 +323,11 @@ def build_strategies(config: dict) -> list[ImageSearchStrategy]:
     serpapi_keys = [
         key.strip() for key in serpapi_keys if isinstance(key, str) and key.strip()
     ]
-    if enable_google_lens and serpapi_keys:
+    serpapi_client = SerpApiClient(api_keys=serpapi_keys) if serpapi_keys else None
+    if enable_google_lens and serpapi_client is not None:
         strategies.append(
             GoogleLensStrategy(
-                api_keys=serpapi_keys,
+                serpapi_client=serpapi_client,
                 max_results=normalize_result_limit(
                     get_nested_config(config, "google_lens", "max_results"),
                     DEFAULT_GOOGLE_LENS_MAX_RESULTS,
