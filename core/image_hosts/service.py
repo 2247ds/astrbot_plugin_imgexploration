@@ -65,9 +65,7 @@ class ImageUploadService:
                     content_type=content_type,
                 )
             except ImageHostError as exc:
-                logger.warning(
-                    f"[ImgExploration] 图床 {host.name} 上传失败: {exc}"
-                )
+                logger.warning(f"[ImgExploration] 图床 {host.name} 上传失败: {exc}")
                 continue
             except Exception as exc:
                 logger.warning(
@@ -79,9 +77,7 @@ class ImageUploadService:
             if _is_valid_http_url(url):
                 return url.strip()
 
-            logger.warning(
-                f"[ImgExploration] 图床 {host.name} 返回了无效的图片 URL"
-            )
+            logger.warning(f"[ImgExploration] 图床 {host.name} 返回了无效的图片 URL")
 
         return None
 

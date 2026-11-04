@@ -40,3 +40,4 @@ class ImageHost(ABC):
 
     async def close(self) -> None:
         """释放图床持有的资源；默认实现不做任何操作."""
+        return None
