@@ -153,6 +153,7 @@
 | `proxy_url` | 字符串 | 代理服务器 URL | 空 |
 | `allow_image_upload` | 布尔值 | 允许上传图片到第三方图床 | `true` |
 | `allow_local_file_access` | 布尔值 | 允许读取本地文件 | `false` |
+| `image_hosts.upload_chain` | 列表 | 图床上传顺序，当前支持 `catbox` | `["catbox"]` |
 
 ---
 
@@ -172,10 +173,11 @@
 
 ### 图床上传
 
-当搜图引擎需要 HTTP URL 时（如 SauceNAO、Google Lens、trace.moe），如果用户发送的是本地文件、`file://` 路径或 `base64` 图片，插件会将图片上传到 **Catbox (catbox.moe)** 第三方图床以获取公开可访问的 URL。
+当搜图引擎需要 HTTP URL 时（如 SauceNAO、Google Lens、trace.moe），如果用户发送的是本地文件、`file://` 路径或 `base64` 图片，插件会按 `upload_chain` 顺序将图片上传到第三方图床以获取公开可访问的 URL。当前内置图床为 **Catbox (catbox.moe)**。
 
 **这意味着：**
-- 图片内容会暴露给 Catbox 第三方服务
+- 图片内容会暴露给配置的第三方图床
+- 配置多个图床时，前面的图床失败后图片可能被继续上传到后面的图床
 - 上传后的图片 URL 可能被他人访问
 - Catbox 服务条款请参考：https://catbox.moe
 
@@ -185,7 +187,7 @@
 **建议：**
 - 对隐私敏感的场景，关闭此功能
 - 仅使用 HTTP URL 图片进行搜图
-- 或自行搭建私有图床并修改代码
+- 或将 `upload_chain` 配置为可信的图床顺序
 
 ---
 

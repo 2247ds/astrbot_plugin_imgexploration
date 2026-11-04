@@ -299,7 +299,7 @@ class UtilsReadImageBytesTests(unittest.IsolatedAsyncioTestCase):
         with (
             tempfile.TemporaryDirectory() as tmp_dir,
             patch(
-                "astrbot_plugin_imgexploration.core.utils.CATBOX_MAX_UPLOAD_BYTES",
+                "astrbot_plugin_imgexploration.core.utils.MAX_LOCAL_IMAGE_BYTES",
                 8,
             ),
         ):

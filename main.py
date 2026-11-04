@@ -39,7 +39,11 @@ from .core.constant import (
 )
 from .core.image_context import ImageRequest, get_image_context_manager
 from .core.service import ImgExplorationService
-from .core.utils import close_aiohttp_session, get_http_image_url
+from .core.utils import (
+    close_aiohttp_session,
+    close_image_upload_service,
+    get_http_image_url,
+)
 
 _SEARCH_COOLDOWN_MESSAGE = "搜图过于频繁，请在 {} 秒后再试"
 _NO_DEFAULT_STRATEGIES_MESSAGE = (
@@ -129,6 +133,7 @@ class ImgExplorationPlugin(Star):
                 f"策略{strategy.get_service_name()}",
                 strategy.close,
             )
+        await _attempt_close("图床服务", close_image_upload_service)
         await _attempt_close("共享 aiohttp session", close_aiohttp_session)
 
         if cleanup_errors:

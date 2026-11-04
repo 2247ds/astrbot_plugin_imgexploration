@@ -75,6 +75,8 @@ class PluginConfigurationTests(PluginTestCase):
             set_allow_image_upload=DEFAULT,
             set_allow_local_file_access=DEFAULT,
             init_image_context_manager=DEFAULT,
+            build_image_hosts=DEFAULT,
+            init_image_upload_service=DEFAULT,
             SauceNaoStrategy=DEFAULT,
             GoogleLensStrategy=DEFAULT,
             Ascii2dStrategy=DEFAULT,
@@ -455,6 +457,10 @@ class PluginConfigurationTests(PluginTestCase):
             max_images=8,
             ttl_seconds=120,
             max_sessions=16,
+        )
+        dependencies["build_image_hosts"].assert_called_once_with(conf_all)
+        dependencies["init_image_upload_service"].assert_called_once_with(
+            dependencies["build_image_hosts"].return_value
         )
         dependencies["SauceNaoStrategy"].assert_called_once_with(
             api_key="sn_key",

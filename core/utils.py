@@ -17,17 +17,14 @@ import aiohttp
 from astrbot.api import logger
 
 from .constant import (
-    CATBOX_MAX_UPLOAD_BYTES,
     DEFAULT_ALLOW_IMAGE_UPLOAD,
     DEFAULT_ALLOW_LOCAL_FILE_ACCESS,
     DEFAULT_USER_AGENT,
-    HTTP_TIMEOUT_SECONDS,
     IMAGE_DOWNLOAD_TIMEOUT,
     MAX_DOWNLOAD_BYTES,
+    MAX_LOCAL_IMAGE_BYTES,
 )
 
-# Catbox 图床 URL
-CATBOX_UPLOAD_URL = "https://catbox.moe/user/api.php"
 # 全局共享的 aiohttp ClientSession
 _aiohttp_session: aiohttp.ClientSession | None = None
 _aiohttp_session_lock = asyncio.Lock()
@@ -312,17 +309,17 @@ def _read_file_bytes(file_path: Path) -> bytes | None:
         file_path: 文件路径
 
     Returns:
-        文件字节数据；不是普通文件或超过 CATBOX_MAX_UPLOAD_BYTES 时返回 None
+        文件字节数据；不是普通文件或超过 MAX_LOCAL_IMAGE_BYTES 时返回 None
     """
     if not file_path.is_file():
         return None
-    if file_path.stat().st_size > CATBOX_MAX_UPLOAD_BYTES:
-        logger.warning("[ImgExploration] 本地图片过大，超过 200MB 限制")
+    if file_path.stat().st_size > MAX_LOCAL_IMAGE_BYTES:
+        logger.warning("[ImgExploration] 本地图片过大，超过读取上限")
         return None
     with file_path.open("rb") as f:
-        data = f.read(CATBOX_MAX_UPLOAD_BYTES + 1)
-    if len(data) > CATBOX_MAX_UPLOAD_BYTES:
-        logger.warning("[ImgExploration] 本地图片过大，超过 200MB 限制")
+        data = f.read(MAX_LOCAL_IMAGE_BYTES + 1)
+    if len(data) > MAX_LOCAL_IMAGE_BYTES:
+        logger.warning("[ImgExploration] 本地图片过大，超过读取上限")
         return None
     return data
 
@@ -341,7 +338,7 @@ async def read_image_bytes(source: str) -> bytes | None:
     注意：
         本地文件访问受 allow_local_file_access 配置控制。
         出于安全考虑，默认禁用本地文件访问，以防止潜在的文件系统信息泄露。
-        本地文件最大读取 CATBOX_MAX_UPLOAD_BYTES，且不读取远程主机或 UNC 路径。
+        本地文件最大读取 MAX_LOCAL_IMAGE_BYTES，且不读取远程主机或 UNC 路径。
 
     Args:
         source: 图片源字符串
@@ -431,74 +428,52 @@ async def read_image_bytes(source: str) -> bytes | None:
     return None
 
 
-async def upload_image(image_bytes: bytes) -> str | None:
-    """将图片上传到图床.
-
-    使用 Catbox 图床（免费，无需 API key）。
+async def upload_image(
+    image_bytes: bytes,
+    *,
+    filename: str = "image.jpg",
+    content_type: str = "image/jpeg",
+) -> str | None:
+    """使用当前配置的图床服务上传图片.
 
     Args:
         image_bytes: 图片字节数据
+        filename: 上传时使用的文件名
+        content_type: 上传时声明的 MIME 类型
 
     Returns:
-        上传后的图片 URL，失败返回 None
+        上传后的 HTTP(S) 图片 URL，全部图床失败时返回 None
     """
     if not image_bytes:
         return None
 
-    # 限制文件大小 (Catbox 限制 200MB)
-    if len(image_bytes) > CATBOX_MAX_UPLOAD_BYTES:
-        logger.warning("[ImgExploration] 图片过大，超过 200MB 限制")
-        return None
+    # 延迟导入，避免 utils 与图床包之间形成模块级循环依赖。
+    from .image_hosts.service import get_image_upload_service
 
-    client_timeout = aiohttp.ClientTimeout(total=HTTP_TIMEOUT_SECONDS)
-    proxy = get_proxy_url()
+    return await get_image_upload_service().upload(
+        image_bytes,
+        filename=filename,
+        content_type=content_type,
+    )
 
-    try:
-        session = await get_aiohttp_session()
-        # 构建 multipart form data
-        data = aiohttp.FormData()
-        data.add_field("reqtype", "fileupload")
-        data.add_field(
-            "fileToUpload",
-            image_bytes,
-            filename="image.jpg",
-            content_type="image/jpeg",
-        )
 
-        headers = {"User-Agent": DEFAULT_USER_AGENT}
+async def close_image_upload_service() -> None:
+    """关闭全局图床服务及图床持有的资源."""
+    from .image_hosts.service import close_image_upload_service as close_service
 
-        async with session.post(
-            CATBOX_UPLOAD_URL,
-            data=data,
-            headers=headers,
-            timeout=client_timeout,
-            proxy=proxy,
-        ) as resp:
-            if resp.status == 200:
-                url = await resp.text()
-                # Catbox 直接返回图片 URL
-                if url and url.startswith("https://"):
-                    return url.strip()
-                logger.warning("[ImgExploration] Catbox 返回了非图片地址的响应")
-            else:
-                logger.warning(f"[ImgExploration] Catbox 上传失败: HTTP {resp.status}")
-    except Exception as e:
-        # 异常文本可能包含带认证信息的代理地址，仅记录异常类型
-        logger.error(f"[ImgExploration] Catbox 上传异常: {type(e).__name__}")
-
-    return None
+    await close_service()
 
 
 async def get_http_image_url(source: str) -> str | None:
     """将图片源转换为 HTTP URL.
 
     如果已经是 HTTP URL，直接返回。
-    如果是本地文件或 base64，且允许图床上传，则上传后返回 URL。
+    如果是本地文件或 base64，且允许图床上传，则使用配置的图床链上传后返回 URL。
 
     注意：
-        本地图片/base64 图片会被上传到 Catbox (catbox.moe) 第三方图床。
-        这意味着图片内容会暴露给第三方服务。如果隐私敏感，请关闭
-        allow_image_upload 配置项，此时仅支持 HTTP URL 图片。
+        非 HTTP 图片会被上传到配置的第三方图床。这意味着图片内容会暴露给
+        第三方服务。如果隐私敏感，请关闭 allow_image_upload 配置项，此时仅
+        支持 HTTP URL 图片。
 
     Args:
         source: 图片源字符串

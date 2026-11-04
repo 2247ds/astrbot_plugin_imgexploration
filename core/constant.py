@@ -13,8 +13,14 @@ IMAGE_DOWNLOAD_TIMEOUT = 20
 # 单次下载内容上限 (字节)，防止异常大的响应耗尽内存
 MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024
 
-# Catbox 图床单文件上传上限 (字节)；本地图片只用于上传，读取上限与其一致
-CATBOX_MAX_UPLOAD_BYTES = 200 * 1024 * 1024
+# 本地图片读取上限 (字节)
+MAX_LOCAL_IMAGE_BYTES = 200 * 1024 * 1024
+
+# Catbox 图床单文件上传上限 (字节)
+CATBOX_MAX_UPLOAD_BYTES = MAX_LOCAL_IMAGE_BYTES
+
+# 图床上传顺序默认值；缺失或迁移前的配置继续使用 Catbox
+DEFAULT_IMAGE_UPLOAD_CHAIN = ("catbox",)
 
 # 请求搜图 API、下载图片和上传图床时使用的浏览器 User-Agent
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"

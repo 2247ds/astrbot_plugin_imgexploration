@@ -544,6 +544,10 @@ class PluginTerminationTests(_ImageWaitPluginTestCase):
 
         with (
             patch(
+                "astrbot_plugin_imgexploration.main.close_image_upload_service",
+                new=AsyncMock(),
+            ) as close_image_hosts,
+            patch(
                 "astrbot_plugin_imgexploration.main.close_aiohttp_session",
                 new=AsyncMock(),
             ) as close_session,
@@ -554,6 +558,7 @@ class PluginTerminationTests(_ImageWaitPluginTestCase):
         self.assertIs(state.future.result(), ImageWaitOutcome.CANCELLED)
         first_strategy.close.assert_awaited_once_with()
         later_strategy.close.assert_awaited_once_with()
+        close_image_hosts.assert_awaited_once_with()
         close_session.assert_awaited_once_with()
 
     async def test_terminate_stops_cleanup_on_cancellation(self) -> None:
@@ -572,6 +577,10 @@ class PluginTerminationTests(_ImageWaitPluginTestCase):
 
         with (
             patch(
+                "astrbot_plugin_imgexploration.main.close_image_upload_service",
+                new=AsyncMock(),
+            ) as close_image_hosts,
+            patch(
                 "astrbot_plugin_imgexploration.main.close_aiohttp_session",
                 new=AsyncMock(),
             ) as close_session,
@@ -582,6 +591,7 @@ class PluginTerminationTests(_ImageWaitPluginTestCase):
         self.assertIs(state.future.result(), ImageWaitOutcome.CANCELLED)
         first_strategy.close.assert_awaited_once_with()
         later_strategy.close.assert_not_awaited()
+        close_image_hosts.assert_not_awaited()
         close_session.assert_not_awaited()
 
     async def test_terminate_leaves_llm_tool_lifecycle_to_framework(self) -> None:
@@ -594,12 +604,19 @@ class PluginTerminationTests(_ImageWaitPluginTestCase):
             get_llm_tool_manager=get_llm_tool_manager,
         )
 
-        with patch(
-            "astrbot_plugin_imgexploration.main.close_aiohttp_session",
-            new=AsyncMock(),
-        ) as close_session:
+        with (
+            patch(
+                "astrbot_plugin_imgexploration.main.close_image_upload_service",
+                new=AsyncMock(),
+            ) as close_image_hosts,
+            patch(
+                "astrbot_plugin_imgexploration.main.close_aiohttp_session",
+                new=AsyncMock(),
+            ) as close_session,
+        ):
             await plugin.terminate()
 
         self.assertIs(state.future.result(), ImageWaitOutcome.CANCELLED)
-        get_llm_tool_manager.assert_not_called()
+        close_image_hosts.assert_awaited_once_with()
         close_session.assert_awaited_once_with()
+        get_llm_tool_manager.assert_not_called()

@@ -294,7 +294,7 @@
       "allow_image_upload": {
         "type": "bool",
         "description": "允许上传图片到第三方图床",
-        "hint": "当搜图引擎需要 HTTP URL 时，本地图片/base64 图片会被上传到 Catbox 图床。",
+        "hint": "当搜图引擎需要 HTTP URL 时，本地图片/base64 图片会按图床上传顺序尝试上传。",
         "default": true
       },
       "allow_local_file_access": {
@@ -302,6 +302,21 @@
         "description": "允许读取本地文件",
         "hint": "允许读取 file:// 路径或本地磁盘路径的图片。",
         "default": false
+      }
+    }
+  },
+  "image_hosts": {
+    "description": "图床配置",
+    "type": "object",
+    "hint": "配置本地图片/base64 图片转换为 HTTP URL 时使用的第三方图床",
+    "items": {
+      "upload_chain": {
+        "type": "list",
+        "description": "图床上传顺序",
+        "hint": "按顺序尝试图床，单个图床失败后使用下一个；当前支持 catbox。留空表示不加载图床，仍受 allow_image_upload 总开关限制。",
+        "default": [
+          "catbox"
+        ]
       }
     }
   },

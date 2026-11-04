@@ -5,6 +5,9 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from astrbot_plugin_imgexploration.core import utils
 from astrbot_plugin_imgexploration.core.image_context import ImageContextManager
+from astrbot_plugin_imgexploration.core.image_hosts import (
+    service as image_host_service,
+)
 from astrbot_plugin_imgexploration.core.models import (
     ExplorationResult,
     ProviderSearchError,
@@ -247,14 +250,15 @@ class LoggingPolicyTests(PluginTestCase):
                 "get_aiohttp_session",
                 new=AsyncMock(return_value=_ProxyFailingSession()),
             ),
-            patch.object(utils, "logger") as logger,
+            patch.object(utils, "logger") as utils_logger,
+            patch.object(image_host_service, "logger") as service_logger,
         ):
             self.assertIsNone(
                 await utils.download_bytes("https://thumb.example/image.jpg")
             )
             self.assertIsNone(await utils.upload_image(b"image"))
 
-        logged = _logged_text(logger)
+        logged = _logged_text(utils_logger, service_logger)
         self.assertIn("RuntimeError", logged)
         self.assertNotIn("proxy-secret", logged)
 
@@ -265,10 +269,10 @@ class LoggingPolicyTests(PluginTestCase):
             patch.object(
                 utils, "get_aiohttp_session", new=AsyncMock(return_value=session)
             ),
-            patch.object(utils, "logger") as logger,
+            patch.object(image_host_service, "logger") as service_logger,
         ):
             self.assertIsNone(await utils.upload_image(b"image"))
 
-        logged = _logged_text(logger)
+        logged = _logged_text(service_logger)
         self.assertIn("HTTP 500", logged)
         self.assertNotIn("private-response-body", logged)

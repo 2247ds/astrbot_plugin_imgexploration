@@ -45,8 +45,10 @@ that repository.
   fallback behavior.
 - `core/strategy.py` and `core/providers/*_strategy.py`: provider interface and
   implementations.
-- `core/utils.py`: image resolution, uploads, downloads, and shared HTTP
-  resources.
+- `core/image_hosts/`: third-party image-host interface, Catbox implementation,
+  configuration factory, upload ordering, and fallback service.
+- `core/utils.py`: image resolution, upload entry point, downloads, and shared
+  HTTP resources.
 - `core/models.py`: result data classes shared by providers, the service, and
   result delivery.
 - `core/constant.py`: endpoints, timeouts, size limits, result-limit defaults,
@@ -76,8 +78,10 @@ that repository.
   defaults, legacy configuration migration, and strategy assembly.
 - `tests/test_service.py`: strategy resolution, result aggregation, and
   thumbnail downloads.
-- `tests/test_utils.py`: proxy settings, downloads, uploads, and local image
-  reading.
+- `tests/test_utils.py`: proxy settings, downloads, upload entry point, and local
+  image reading.
+- `tests/test_image_hosts.py`: upload-chain configuration, provider ordering,
+  fallback, URL validation, limits, and cleanup.
 - `tests/test_sauce_nao_strategy.py`, `tests/test_google_lens_strategy.py`,
   `tests/test_ascii2d_strategy.py`, and `tests/test_trace_moe_strategy.py`:
   provider requests, parsing, limits, and failures.
@@ -132,6 +136,20 @@ sender_id = str(event.get_sender_id() or "")
 ```
 
 Missing metadata must not prevent image capture.
+
+## Image Host Contract
+
+- `allow_image_upload` is the master switch. HTTP(S) image URLs bypass uploads.
+- `image_hosts.upload_chain` selects and orders third-party upload providers.
+- Missing host configuration defaults to Catbox; an explicit empty chain loads no
+  hosts.
+- Each provider implements `ImageHost`, declares its upload limit, returns a
+  validated HTTP(S) image URL, and raises `ImageHostError` for expected failures.
+- `ImageUploadService` owns ordering, fallback, URL validation, and resource
+  cleanup. A failed provider must not block later providers.
+- Do not log image bytes, response bodies, API keys, or proxy credentials.
+- Keep `utils.upload_image()` as the compatibility entry point; callers should
+  not depend on a specific provider.
 
 ## Command And Wait Contract
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🔄 变更
+
+- 重构第三方图床为可扩展的 provider 架构，新增 `image_hosts.upload_chain` 配置；当前内置 Catbox，缺失配置时保持原有行为
+
 ## [1.4.1] - 2026-10-24
 
 ### 🎨 优化

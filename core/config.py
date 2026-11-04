@@ -31,6 +31,7 @@ from .constant import (
     DEFAULT_TRACE_MOE_SIMILARITY_THRESHOLD,
 )
 from .image_context import init_image_context_manager
+from .image_hosts import build_image_hosts, init_image_upload_service
 from .providers.ascii2d_strategy import Ascii2dStrategy
 from .providers.google_lens_strategy import GoogleLensStrategy
 from .providers.sauce_nao_strategy import SauceNaoStrategy
@@ -240,6 +241,7 @@ def apply_runtime_settings(config: dict) -> None:
         "allow_image_upload", DEFAULT_ALLOW_IMAGE_UPLOAD
     )
     set_allow_image_upload(allow_image_upload)
+    init_image_upload_service(build_image_hosts(config))
     allow_local_file_access = network_config.get(
         "allow_local_file_access", DEFAULT_ALLOW_LOCAL_FILE_ACCESS
     )
