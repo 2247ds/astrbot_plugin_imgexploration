@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from astrbot_plugin_imgexploration.core import utils
 from astrbot_plugin_imgexploration.core.image_context import ImageContextManager
 from astrbot_plugin_imgexploration.core.image_hosts import (
+    CatboxHost,
     service as image_host_service,
 )
 from astrbot_plugin_imgexploration.core.models import (
@@ -67,6 +68,22 @@ class _CatboxErrorResponse:
 
     async def text(self) -> str:
         return "private-response-body"
+
+
+class _CatboxSuccessResponse:
+    status = 200
+
+    def __init__(self, url: str) -> None:
+        self._url = url
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        return False
+
+    async def text(self) -> str:
+        return self._url
 
 
 class LoggingPolicyTests(PluginTestCase):
@@ -278,3 +295,30 @@ class LoggingPolicyTests(PluginTestCase):
         logged = _logged_text(service_logger)
         self.assertIn("HTTP 500", logged)
         self.assertNotIn("private-response-body", logged)
+
+    async def test_image_host_success_logs_host_with_url_only_at_debug(self) -> None:
+        uploaded_url = "https://files.catbox.moe/private-upload.jpg?sig=secret"
+        session = SimpleNamespace(
+            post=lambda *args, **kwargs: _CatboxSuccessResponse(uploaded_url)
+        )
+        image_host_service.init_image_upload_service([CatboxHost()])
+        self.addAsyncCleanup(image_host_service.close_image_upload_service)
+
+        with (
+            patch.object(
+                utils, "get_aiohttp_session", new=AsyncMock(return_value=session)
+            ),
+            patch.object(image_host_service, "logger") as service_logger,
+        ):
+            url = await utils.upload_image(b"image")
+
+        self.assertEqual(url, uploaded_url)
+        info_messages = " ".join(
+            str(call.args[0]) for call in service_logger.info.call_args_list
+        )
+        debug_messages = " ".join(
+            str(call.args[0]) for call in service_logger.debug.call_args_list
+        )
+        self.assertIn("Catbox", info_messages)
+        self.assertNotIn(uploaded_url, info_messages)
+        self.assertIn(uploaded_url, debug_messages)

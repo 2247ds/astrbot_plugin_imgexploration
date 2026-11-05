@@ -75,7 +75,10 @@ class ImageUploadService:
                 continue
 
             if _is_valid_http_url(url):
-                return url.strip()
+                clean_url = url.strip()
+                logger.info(f"[ImgExploration] 图床 {host.name} 上传成功")
+                logger.debug(f"[ImgExploration] 图床上传 URL: {clean_url}")
+                return clean_url
 
             logger.warning(f"[ImgExploration] 图床 {host.name} 返回了无效的图片 URL")
 
