@@ -27,6 +27,7 @@ from ..utils import DownloadTooLargeError, download_bytes, get_proxy_url
 _NO_RESULT_MARKERS = ("no unfiltered results", "no hits found")
 _CLOUDFLARE_MARKERS = ("just a moment", "cf-chl", "challenge-platform")
 _MAX_TAGS = 10
+_REDIRECT_STATUSES = (301, 302, 303, 307, 308)
 
 
 def build_multipart_body(
@@ -206,8 +207,19 @@ class EHentaiStrategy(ImageSearchStrategy):
                 data=body,
                 headers={"Content-Type": content_type_header},
                 cookies=self.cookies or None,
-                allow_redirects=True,
+                allow_redirects=False,
             )
+            if getattr(response, "status_code", 0) in _REDIRECT_STATUSES:
+                location = response.headers.get("location")
+                if location:
+                    # 自动跟随会把 multipart Content-Type 带到 GET 上，
+                    # E-Hentai 会因此返回 403，所以手动请求结果页。
+                    response = await session.get(
+                        urllib.parse.urljoin(self._upload_url, location),
+                        headers={"Referer": self._upload_url},
+                        cookies=self.cookies or None,
+                        allow_redirects=True,
+                    )
         except ProviderSearchError:
             raise
         except Exception as exc:

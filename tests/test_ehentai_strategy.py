@@ -40,6 +40,7 @@ class EHentaiStrategyTests(unittest.IsolatedAsyncioTestCase):
     def _session(self) -> MagicMock:
         session = MagicMock()
         session.post = AsyncMock()
+        session.get = AsyncMock()
         session.close = AsyncMock()
         return session
 
@@ -203,7 +204,31 @@ class EHentaiStrategyTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(body.endswith(f"\r\n--{boundary}--\r\n".encode()))
 
         self.assertEqual(kwargs["cookies"], {"a": "1", "b": "2"})
-        self.assertTrue(kwargs["allow_redirects"])
+        self.assertFalse(kwargs["allow_redirects"])
+
+    async def test_redirect_is_followed_without_multipart_headers(self) -> None:
+        result_response = _response(_load_fixture("result_page.html"))
+        empty_response = _response("<html><body><p>No hits found</p></body></html>")
+        strategy = EHentaiStrategy(cookies="a=1; b=2")
+        session = self._session()
+        session.post.return_value = _response("", status=302, url=EHENTAI_UPLOAD_URL)
+        session.post.return_value.headers = {
+            "location": "https://e-hentai.org/?f_shash=abc&fs_from=image.jpg"
+        }
+        session.get.return_value = result_response
+
+        results, _, _ = await self._run_search(strategy, session=session)
+        self.assertEqual(len(results), 3)
+
+        args, kwargs = session.get.await_args
+        self.assertEqual(args[0], "https://e-hentai.org/?f_shash=abc&fs_from=image.jpg")
+        self.assertNotIn("Content-Type", kwargs["headers"])
+        self.assertEqual(kwargs["headers"].get("Referer"), EHENTAI_UPLOAD_URL)
+        self.assertEqual(kwargs["cookies"], {"a": "1", "b": "2"})
+
+        session.get.return_value = empty_response
+        results, _, _ = await self._run_search(strategy, session=session)
+        self.assertEqual(results, [])
 
     async def test_default_similar_switch(self) -> None:
         response = _response(_load_fixture("result_page.html"))
