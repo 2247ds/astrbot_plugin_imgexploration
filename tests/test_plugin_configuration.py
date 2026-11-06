@@ -21,6 +21,13 @@ from astrbot_plugin_imgexploration.core.constant import (
     DEFAULT_ALLOW_LOCAL_FILE_ACCESS,
     DEFAULT_ASCII2D_BOVW_MAX_RESULTS,
     DEFAULT_ASCII2D_COLOR_MAX_RESULTS,
+    DEFAULT_EHENTAI_INCLUDE_IN_DEFAULT,
+    DEFAULT_EHENTAI_MAX_RESULTS,
+    DEFAULT_EHENTAI_SEARCH_COVERS,
+    DEFAULT_EHENTAI_SEARCH_EXP,
+    DEFAULT_EHENTAI_SEARCH_SIMILAR,
+    DEFAULT_EHENTAI_USE_EXHENTAI,
+    DEFAULT_ENABLE_EHENTAI,
     DEFAULT_ENABLE_YANDEX_IMAGES,
     DEFAULT_GOOGLE_LENS_AUTO_CROP,
     DEFAULT_GOOGLE_LENS_COUNTRY,
@@ -87,6 +94,7 @@ class PluginConfigurationTests(PluginTestCase):
             GoogleLensStrategy=DEFAULT,
             YandexImagesStrategy=DEFAULT,
             Ascii2dStrategy=DEFAULT,
+            EHentaiStrategy=DEFAULT,
             SerpApiClient=DEFAULT,
         )
 
@@ -150,6 +158,7 @@ class PluginConfigurationTests(PluginTestCase):
             ("yandex_images", "max_results"): DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
             ("ascii2d", "bovw_max_results"): DEFAULT_ASCII2D_BOVW_MAX_RESULTS,
             ("ascii2d", "color_max_results"): DEFAULT_ASCII2D_COLOR_MAX_RESULTS,
+            ("ehentai", "max_results"): DEFAULT_EHENTAI_MAX_RESULTS,
             ("trace_moe", "max_results"): DEFAULT_TRACE_MOE_MAX_RESULTS,
         }
 
@@ -779,3 +788,116 @@ class PluginConfigurationTests(PluginTestCase):
                     self.assertEqual(build_strategies(config), [])
 
                 dependencies["YandexImagesStrategy"].assert_not_called()
+
+    def test_ehentai_schema_matches_runtime_defaults(self) -> None:
+        schema_path = Path(__file__).parents[1] / "_conf_schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        items = schema["ehentai"]["items"]
+
+        self.assertEqual(
+            {
+                "enable": DEFAULT_ENABLE_EHENTAI,
+                "use_exhentai": DEFAULT_EHENTAI_USE_EXHENTAI,
+                "cookies": "",
+                "search_covers": DEFAULT_EHENTAI_SEARCH_COVERS,
+                "search_similar": DEFAULT_EHENTAI_SEARCH_SIMILAR,
+                "search_exp": DEFAULT_EHENTAI_SEARCH_EXP,
+                "include_in_default": DEFAULT_EHENTAI_INCLUDE_IN_DEFAULT,
+                "max_results": DEFAULT_EHENTAI_MAX_RESULTS,
+            },
+            {key: items[key]["default"] for key in items},
+        )
+        self.assertFalse(items["enable"]["default"])
+        self.assertNotIn("condition", items["enable"])
+        for key in items:
+            if key != "enable":
+                with self.subTest(key=key):
+                    self.assertEqual(items[key]["condition"], {"enable": True})
+
+    def test_ehentai_strategy_assembly(self) -> None:
+        config = {
+            "saucenao": {"enable": False},
+            "google_lens": {"enable": False},
+            "ascii2d": {"enable": True, "session_id": "ascii_sess"},
+            "ehentai": {
+                "enable": True,
+                "use_exhentai": True,
+                "cookies": " ipb_member_id=1; ipb_pass_hash=abc ",
+                "search_covers": True,
+                "search_similar": False,
+                "search_exp": True,
+                "max_results": 7,
+            },
+            "trace_moe": {"enable": True},
+        }
+
+        with self._patch_strategy_dependencies() as dependencies:
+            strategies = build_strategies(config)
+
+        dependencies["EHentaiStrategy"].assert_called_once_with(
+            use_exhentai=True,
+            cookies="ipb_member_id=1; ipb_pass_hash=abc",
+            max_results=7,
+            search_covers=True,
+            search_similar=False,
+            search_exp=True,
+        )
+        self.assertEqual(
+            strategies[:2],
+            [
+                dependencies["Ascii2dStrategy"].return_value,
+                dependencies["EHentaiStrategy"].return_value,
+            ],
+        )
+        self.assertEqual(len(strategies), 3)
+        self.assertEqual(strategies[2].get_service_name(), "trace.moe")
+
+    def test_ehentai_not_loaded_when_disabled_or_without_ex_cookie(self) -> None:
+        cases = (
+            {},
+            {"ehentai": {"enable": False}},
+            {"ehentai": {"enable": "true"}},
+            {"ehentai": {"enable": True, "use_exhentai": True}},
+            {"ehentai": {"enable": True, "use_exhentai": True, "cookies": " ; "}},
+            {
+                "ehentai": {
+                    "enable": True,
+                    "use_exhentai": True,
+                    "cookies": "invalid-cookie",
+                }
+            },
+        )
+
+        for config in cases:
+            with self.subTest(config=config):
+                config = {
+                    "saucenao": {"enable": False},
+                    "google_lens": {"enable": False},
+                    "ascii2d": {"enable": False},
+                    **config,
+                }
+                with self._patch_strategy_dependencies() as dependencies:
+                    self.assertEqual(build_strategies(config), [])
+
+                dependencies["EHentaiStrategy"].assert_not_called()
+
+    def test_ehentai_uses_defaults_for_invalid_limits_and_options(self) -> None:
+        config = {
+            "saucenao": {"enable": False},
+            "google_lens": {"enable": False},
+            "ascii2d": {"enable": False},
+            "ehentai": {"enable": True, "max_results": 0},
+        }
+
+        with self._patch_strategy_dependencies() as dependencies:
+            strategies = build_strategies(config)
+
+        dependencies["EHentaiStrategy"].assert_called_once_with(
+            use_exhentai=False,
+            cookies="",
+            max_results=DEFAULT_EHENTAI_MAX_RESULTS,
+            search_covers=DEFAULT_EHENTAI_SEARCH_COVERS,
+            search_similar=DEFAULT_EHENTAI_SEARCH_SIMILAR,
+            search_exp=DEFAULT_EHENTAI_SEARCH_EXP,
+        )
+        self.assertEqual(strategies, [dependencies["EHentaiStrategy"].return_value])

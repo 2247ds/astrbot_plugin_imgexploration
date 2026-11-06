@@ -34,6 +34,7 @@ from .core.config import (
     normalize_search_cooldown,
 )
 from .core.constant import (
+    DEFAULT_EHENTAI_INCLUDE_IN_DEFAULT,
     DEFAULT_LLM_TOOL_RESPONSE_MODE,
     DEFAULT_TRACE_MOE_INCLUDE_IN_DEFAULT,
 )
@@ -47,7 +48,8 @@ from .core.utils import (
 
 _SEARCH_COOLDOWN_MESSAGE = "搜图过于频繁，请在 {} 秒后再试"
 _NO_DEFAULT_STRATEGIES_MESSAGE = (
-    "没有启用默认搜图引擎，请指定引擎（如「搜图 anime」）或在配置中启用默认搜图引擎。"
+    "没有启用默认搜图引擎，请指定引擎（如「搜图 saucenao」或「搜图 eh」），"
+    "或在配置中启用默认搜图引擎。"
 )
 # 事件到达时图片上下文的序号，LLM 工具据此排除请求之后他人发送的图片
 _REQUEST_IMAGE_SEQUENCE_EXTRA = "imgexploration_image_sequence"
@@ -59,7 +61,8 @@ class ImgExplorationPlugin(Star):
     功能:
     - 命令消息附图或回复图片消息发送 "/搜图" 触发搜索
     - 无图命令可等待同一发送者随后发送图片
-    - 支持 SauceNAO、Google Lens、Yandex Images、Ascii2d、trace.moe 搜索引擎
+    - 支持 SauceNAO、Google Lens、Yandex Images、Ascii2d、E-Hentai、trace.moe
+      搜索引擎
     - aiocqhttp 平台使用合并转发消息展示结果
     - 其他平台使用单条消息链展示结果
     - 支持 LLM 工具调用，让 AI 帮助用户搜图
@@ -104,12 +107,29 @@ class ImgExplorationPlugin(Star):
             )
             is True
         )
+        include_ehentai = (
+            get_nested_config(
+                self.config,
+                "ehentai",
+                "include_in_default",
+                default=DEFAULT_EHENTAI_INCLUDE_IN_DEFAULT,
+            )
+            is True
+        )
+        excluded_from_default = {
+            name
+            for name, included in (
+                ("trace.moe", include_trace),
+                ("E-Hentai", include_ehentai),
+            )
+            if not included
+        }
         self.service = ImgExplorationService(
             self.strategies,
             default_strategy_names=[
                 strategy.get_service_name()
                 for strategy in self.strategies
-                if include_trace or strategy.get_service_name() != "trace.moe"
+                if strategy.get_service_name() not in excluded_from_default
             ],
         )
 
@@ -356,7 +376,7 @@ class ImgExplorationPlugin(Star):
 
         Args:
             image_index(int): Optional explicit image index; omit it when using image_id. -1 = most recent image, 1 = first/oldest image.
-            strategies(string): Usually omit this so the plugin uses its configured default engines. Set it only when the user explicitly names engines, as comma-separated names: saucenao, google, yandex, ascii2d, anime. Use anime only when the user explicitly asks which anime, episode, or timestamp a screenshot is from. Engines that are not enabled return an error listing the available ones.
+            strategies(string): Usually omit this so the plugin uses its configured default engines. Set it only when the user explicitly names engines, as comma-separated names: saucenao, google, yandex, ascii2d, eh, anime. Use eh only when the user explicitly asks for E-Hentai or ExHentai. Use anime only when the user explicitly asks which anime, episode, or timestamp a screenshot is from. Engines that are not enabled return an error listing the available ones.
             image_id(string): Optional stable image ID returned by get_session_images. Higher priority than image_index.
 
         Returns:
@@ -633,12 +653,13 @@ class ImgExplorationPlugin(Star):
         - 搜图 google: 只使用 Google Lens 搜索
         - 搜图 yandex: 只使用 Yandex Images 搜索（需先启用）
         - 搜图 ascii2d: 只使用 Ascii2d 搜索
+        - 搜图 eh: 只使用 E-Hentai 搜索（需先启用）
         - 搜图 anime: 只使用 trace.moe 搜索（需先启用）
         - 搜图 saucenao,google: 使用多个指定策略
           (可用英文逗号、中文逗号、顿号或空格分隔)
 
         别名: sauce=saucenao, 2d=ascii2d, lens=google,
-        yandeximages=yandex, trace/tracemoe/whatanime=anime
+        yandeximages=yandex, ehentai=eh, trace/tracemoe/whatanime=anime
         """
         results = self._command_search_results(event, event.message_str)
         try:
@@ -657,7 +678,7 @@ class ImgExplorationPlugin(Star):
         if not self.strategies:
             yield (
                 "没有可用的搜图 API，请检查配置。\n"
-                "需要在 WebUI 中配置搜图引擎，或启用 trace.moe。"
+                "需要在 WebUI 中配置并启用至少一个搜图引擎。"
             )
             return
 

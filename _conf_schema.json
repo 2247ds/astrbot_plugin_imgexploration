@@ -206,6 +206,68 @@
       }
     }
   },
+  "ehentai": {
+    "description": "E-Hentai / ExHentai 配置",
+    "type": "object",
+    "hint": "通过上传图片到 E-Hentai 进行反向搜图，可返回成人向画廊；默认关闭",
+    "items": {
+      "enable": {
+        "type": "bool",
+        "description": "启用 E-Hentai 搜索",
+        "hint": "默认关闭。启用后可用「搜图 eh」或「搜图 ehentai」调用。搜索结果可能包含成人内容。",
+        "default": false
+      },
+      "use_exhentai": {
+        "type": "bool",
+        "description": "使用 ExHentai",
+        "hint": "开启后改用 ExHentai，需要有效 Cookie；关闭时使用普通 E-Hentai。",
+        "default": false,
+        "condition": {"enable": true}
+      },
+      "cookies": {
+        "type": "string",
+        "description": "E-Hentai / ExHentai Cookie",
+        "hint": "ExHentai 必填；普通模式在站点要求时也可以填写。格式为 key=value; key2=value2。Cookie 只用于本站请求，不会写入日志。",
+        "default": "",
+        "condition": {"enable": true}
+      },
+      "search_covers": {
+        "type": "bool",
+        "description": "搜索封面图片",
+        "hint": "上传图片时勾选封面搜索选项。",
+        "default": false,
+        "condition": {"enable": true}
+      },
+      "search_similar": {
+        "type": "bool",
+        "description": "搜索相似图片",
+        "hint": "上传图片时勾选相似图片搜索选项。",
+        "default": true,
+        "condition": {"enable": true}
+      },
+      "search_exp": {
+        "type": "bool",
+        "description": "扩展搜索",
+        "hint": "上传图片时勾选扩展搜索选项。",
+        "default": false,
+        "condition": {"enable": true}
+      },
+      "include_in_default": {
+        "type": "bool",
+        "description": "E-Hentai 参与默认搜图",
+        "hint": "关闭时仅明确指定 eh/ehentai 才调用；开启后无参数搜图也会调用。",
+        "default": false,
+        "condition": {"enable": true}
+      },
+      "max_results": {
+        "type": "int",
+        "description": "E-Hentai 最大结果数",
+        "hint": "必须大于 0；留空或无效时使用默认值 5。",
+        "default": 5,
+        "condition": {"enable": true}
+      }
+    }
+  },
   "trace_moe": {
     "description": "trace.moe 配置",
     "type": "object",

@@ -52,6 +52,8 @@ that repository.
 - `core/providers/google_lens_strategy.py` and
   `core/providers/yandex_images_strategy.py`: SerpAPI engine strategies that
   only build engine parameters and parse engine responses.
+- `core/providers/ehentai_strategy.py`: E-Hentai / ExHentai image-upload search,
+  Cookie parsing, response classification, and gallery-page parsing.
 - `core/image_hosts/`: third-party image-host interface, Catbox and Uguu
   implementations, configuration factory, upload ordering, and fallback service.
 - `core/utils.py`: image resolution, upload entry point, downloads, and shared
@@ -93,6 +95,12 @@ that repository.
   image reading.
 - `tests/test_image_hosts.py`: upload-chain configuration, provider ordering,
   fallback, URL validation, limits, and cleanup.
+- `tests/fixtures/ehentai/`: sanitized E-Hentai response pages for strategy
+  tests; fixture structure may come from live pages, but content is replaced.
+- `tests/test_ehentai_strategy.py`: E-Hentai download, multipart upload,
+  Cookie handling, response classification, URL normalization, and parsing.
+- `tests/test_ehentai_integration.py`: E-Hentai enable/default switches,
+  command aliases, waits, default-search exclusion, and LLM tool behavior.
 - `tests/test_sauce_nao_strategy.py`, `tests/test_google_lens_strategy.py`,
   `tests/test_yandex_images_strategy.py`, `tests/test_ascii2d_strategy.py`,
   and `tests/test_trace_moe_strategy.py`: provider requests, parsing, limits,
@@ -247,6 +255,10 @@ Run checks in proportion to the changed behavior:
 - Shared downloads, uploads, proxy settings, or local image reading:
   `tests/test_utils.py`.
 - Credentials, image URLs, or exception text in logs: `tests/test_logging.py`.
+- E-Hentai upload, Cookie handling, response classification, or parsing:
+  `tests/test_ehentai_strategy.py`.
+- E-Hentai enable/default switches, aliases, waits, or LLM behavior:
+  `tests/test_ehentai_integration.py`.
 - Shared service or provider changes: run all affected tests and add focused
   provider coverage where practical.
 

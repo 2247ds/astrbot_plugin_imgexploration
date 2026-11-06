@@ -134,6 +134,21 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 | `bovw_max_results` | 整数 | 特征检索最大结果数量 | `3` |
 | `color_max_results` | 整数 | 色合检索最大结果数量 | `2` |
 
+### E-Hentai / ExHentai（`ehentai`）
+
+将图片上传到 E-Hentai 进行反向搜图。默认关闭，结果可能包含成人内容。可通过 `搜图 eh` 或 `搜图 ehentai` 显式调用。
+
+| 配置项 | 类型 | 说明 | 默认值 |
+|--------|------|------|--------|
+| `enable` | 布尔值 | 启用 E-Hentai | `false` |
+| `use_exhentai` | 布尔值 | 改用 ExHentai，需要有效 Cookie | `false` |
+| `cookies` | 字符串 | E-Hentai / ExHentai Cookie，格式为 `key=value; key2=value2`；ExHentai 必填 | 空 |
+| `search_covers` | 布尔值 | 搜索封面图片 | `false` |
+| `search_similar` | 布尔值 | 搜索相似图片 | `true` |
+| `search_exp` | 布尔值 | 扩展搜索 | `false` |
+| `include_in_default` | 布尔值 | 参与无参数搜图 | `false` |
+| `max_results` | 整数 | 最大结果数量 | `5` |
+
 ### trace.moe（`trace_moe`）
 
 | 配置项 | 类型 | 说明 | 默认值 |
@@ -204,6 +219,9 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 - Catbox 服务条款请参考：https://catbox.moe
 - Uguu 说明请参考：https://uguu.se/api
 
+启用 E-Hentai 时，插件会把待搜索图片直接上传到 E-Hentai / ExHentai 进行反查，
+图片内容因此会提交给该站点，与是否启用第三方图床无关。
+
 **如何关闭：**
 在配置中设置 `allow_image_upload = false`，此时插件仅支持 HTTP URL 图片搜图，本地图片/base64 图片将被拒绝。
 
@@ -226,6 +244,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 搜图 google
 搜图 yandex
 搜图 ascii2d
+搜图 eh
 搜图 anime
 搜图 saucenao,google
 搜图 sauce,2d
@@ -253,6 +272,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 - `2d` = `ascii2d`
 - `lens` = `google`
 - `yandeximages` = `yandex`
+- `ehentai` = `eh`
 - `trace`、`tracemoe`、`whatanime` = `anime`
 
 ### trace.moe
@@ -270,6 +290,22 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 - 低于 90% 的结果通常不可靠；调低阈值后会标注低置信度候选。
 - 多集文件显示集数范围；部分 OVA、特典无法识别集数。
 - 成人内容隐藏预览图，不发送预览视频。
+
+### E-Hentai / ExHentai
+
+`搜图 eh` 通过 E-Hentai 上传图片并返回匹配的画廊。默认不参与无参数搜图，
+需将 `ehentai.include_in_default` 设为 `true` 后才会加入默认搜索。
+
+| `enable` | `include_in_default` | 行为 |
+|---|---|---|
+| 关闭 | 任意 | 不加载 E-Hentai，命令和 AI 均无法调用 |
+| 开启 | 关闭 | 仅明确指定 `eh`/`ehentai` 时调用 |
+| 开启 | 开启 | 无参数 `搜图` 也会调用 |
+
+- 结果可能包含成人内容，请确认使用场景适合后再启用。
+- 普通模式无需 Cookie；站点要求验证或使用 ExHentai 时需要填写 `cookies`。
+- 启用 `use_exhentai` 但没有有效 Cookie 时不会加载该策略。
+- Cloudflare 验证、认证失败和限流会作为搜索错误提示，不会显示成“未找到结果”。
 
 ### LLM 工具调用
 
@@ -329,6 +365,16 @@ Yandex Images 默认关闭，需将 `yandex_images.enable` 设为 `true`，并�
 5. 复制 `_session_id` Cookie 的值，填入 Ascii2d 的 `session_id`
 6. 复制 `cf_clearance` Cookie 的值，填入 Ascii2d 的 `cf_clearance`
 
+### E-Hentai / ExHentai Cookie（可选）
+
+普通 E-Hentai 通常无需 Cookie。使用 ExHentai 时：
+
+1. 在浏览器登录 ExHentai 并完成站点验证
+2. 打开开发者工具 (F12) → Application → Cookies
+3. 复制所需 Cookie，按 `key=value; key2=value2` 格式填入 `ehentai.cookies`
+
+Cookie 只用于 E-Hentai / ExHentai 请求，不会写入日志。
+
 ### trace.moe（可选）
 
 无需 API Key 即可使用。免费额度按出口 IP 共享，官方当前为滚动 24 小时 100 次、
@@ -347,6 +393,7 @@ Yandex Images 默认关闭，需将 `yandex_images.enable` 设为 `true`，并�
 | **Google Lens** | 通用图片搜索，覆盖面广 | 通用图片、商品、风景 |
 | **Yandex Images** | Yandex 反向搜图，可查找图片出处或相似图片，默认关闭 | 通用图片、俄语和欧洲站点来源 |
 | **Ascii2d** | 二次元插画搜索；色合检索匹配整体配色，特征检索可找到裁剪或修改过的图片 | 动漫插画、Pixiv/X 来源 |
+| **E-Hentai** | 上传图片反查画廊，支持 ExHentai，默认关闭；结果可能包含成人内容 | 动漫、漫画和同人画廊 |
 | **trace.moe** | 按动画画面定位番剧、集数和时间点，默认关闭 | 动画截图 |
 
 ---

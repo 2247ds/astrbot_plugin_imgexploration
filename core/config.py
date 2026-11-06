@@ -12,6 +12,12 @@ from .constant import (
     DEFAULT_ALLOW_LOCAL_FILE_ACCESS,
     DEFAULT_ASCII2D_BOVW_MAX_RESULTS,
     DEFAULT_ASCII2D_COLOR_MAX_RESULTS,
+    DEFAULT_EHENTAI_MAX_RESULTS,
+    DEFAULT_EHENTAI_SEARCH_COVERS,
+    DEFAULT_EHENTAI_SEARCH_EXP,
+    DEFAULT_EHENTAI_SEARCH_SIMILAR,
+    DEFAULT_EHENTAI_USE_EXHENTAI,
+    DEFAULT_ENABLE_EHENTAI,
     DEFAULT_ENABLE_TRACE_MOE,
     DEFAULT_ENABLE_YANDEX_IMAGES,
     DEFAULT_GOOGLE_LENS_AUTO_CROP,
@@ -39,6 +45,7 @@ from .constant import (
 from .image_context import init_image_context_manager
 from .image_hosts import build_image_hosts, init_image_upload_service
 from .providers.ascii2d_strategy import Ascii2dStrategy
+from .providers.ehentai_strategy import EHentaiStrategy, parse_cookie_header
 from .providers.google_lens_strategy import GoogleLensStrategy
 from .providers.sauce_nao_strategy import SauceNaoStrategy
 from .providers.trace_moe_strategy import TraceMoeStrategy
@@ -469,6 +476,69 @@ def build_strategies(config: dict) -> list[ImageSearchStrategy]:
         logger.warning("[ImgExploration] Ascii2d session_id 未配置，跳过该策略")
     else:
         logger.info("[ImgExploration] Ascii2d 策略已禁用")
+
+    # E-Hentai / ExHentai
+    enable_ehentai = (
+        get_nested_config(config, "ehentai", "enable", default=DEFAULT_ENABLE_EHENTAI)
+        is True
+    )
+    ehentai_use_exhentai = (
+        get_nested_config(
+            config,
+            "ehentai",
+            "use_exhentai",
+            default=DEFAULT_EHENTAI_USE_EXHENTAI,
+        )
+        is True
+    )
+    ehentai_cookies = str(
+        get_nested_config(config, "ehentai", "cookies", default="")
+    ).strip()
+    if enable_ehentai and (
+        not ehentai_use_exhentai or parse_cookie_header(ehentai_cookies)
+    ):
+        strategies.append(
+            EHentaiStrategy(
+                use_exhentai=ehentai_use_exhentai,
+                cookies=ehentai_cookies,
+                max_results=normalize_result_limit(
+                    get_nested_config(config, "ehentai", "max_results"),
+                    DEFAULT_EHENTAI_MAX_RESULTS,
+                ),
+                search_covers=(
+                    get_nested_config(
+                        config,
+                        "ehentai",
+                        "search_covers",
+                        default=DEFAULT_EHENTAI_SEARCH_COVERS,
+                    )
+                    is True
+                ),
+                search_similar=(
+                    get_nested_config(
+                        config,
+                        "ehentai",
+                        "search_similar",
+                        default=DEFAULT_EHENTAI_SEARCH_SIMILAR,
+                    )
+                    is True
+                ),
+                search_exp=(
+                    get_nested_config(
+                        config,
+                        "ehentai",
+                        "search_exp",
+                        default=DEFAULT_EHENTAI_SEARCH_EXP,
+                    )
+                    is True
+                ),
+            )
+        )
+        logger.info("[ImgExploration] 已加载 E-Hentai 策略")
+    elif enable_ehentai:
+        logger.warning("[ImgExploration] 使用 ExHentai 但未配置有效 Cookie，跳过该策略")
+    else:
+        logger.info("[ImgExploration] E-Hentai 策略已禁用")
 
     if (
         get_nested_config(

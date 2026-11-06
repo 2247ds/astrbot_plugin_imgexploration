@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from astrbot_plugin_imgexploration.core import utils
 from astrbot_plugin_imgexploration.core.image_context import ImageContextManager
+from astrbot_plugin_imgexploration.core.image_hosts import CatboxHost
 from astrbot_plugin_imgexploration.core.image_hosts import (
-    CatboxHost,
     service as image_host_service,
 )
 from astrbot_plugin_imgexploration.core.models import (

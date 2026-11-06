@@ -110,6 +110,22 @@ DEFAULT_ASCII2D_BOVW_MAX_RESULTS = 3
 DEFAULT_ASCII2D_COLOR_MAX_RESULTS = 2
 
 # ==============================================================================
+# E-Hentai 策略
+# ==============================================================================
+
+# 初始候选端点；需用真实表单/响应核验，尤其注意 ExHentai 的 upld 前缀
+EHENTAI_UPLOAD_URL = "https://upld.e-hentai.org/image_lookup.php"
+EHENTAI_EX_UPLOAD_URL = "https://upld.exhentai.org/upld/image_lookup.php"
+
+DEFAULT_ENABLE_EHENTAI = False
+DEFAULT_EHENTAI_USE_EXHENTAI = False
+DEFAULT_EHENTAI_SEARCH_COVERS = False
+DEFAULT_EHENTAI_SEARCH_SIMILAR = True
+DEFAULT_EHENTAI_SEARCH_EXP = False
+DEFAULT_EHENTAI_INCLUDE_IN_DEFAULT = False
+DEFAULT_EHENTAI_MAX_RESULTS = 5
+
+# ==============================================================================
 # trace.moe
 # ==============================================================================
 
@@ -137,6 +153,8 @@ STRATEGY_ALIAS_MAP = {
     "ascii2d": "Ascii2d",
     "ascii": "Ascii2d",
     "2d": "Ascii2d",
+    "ehentai": "E-Hentai",
+    "eh": "E-Hentai",
     "anime": "trace.moe",
     "trace": "trace.moe",
     "tracemoe": "trace.moe",
