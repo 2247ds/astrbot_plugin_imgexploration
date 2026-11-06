@@ -21,6 +21,16 @@ from .serpapi_strategy_base import SerpApiStrategyBase
 
 YANDEX_IMAGES_TABS = {"about", "similar"}
 
+# SerpAPI yandex_images 支持的 Yandex 站点
+YANDEX_IMAGES_DOMAINS = (
+    "yandex.ru",
+    "yandex.com",
+    "yandex.com.tr",
+    "yandex.by",
+    "yandex.kz",
+    "yandex.uz",
+)
+
 # SerpAPI 的 family_mode 取值：0 关闭、1 适中、2 严格
 YANDEX_IMAGES_FAMILY_MODES = {
     "off": "0",
@@ -53,7 +63,7 @@ class YandexImagesStrategy(SerpApiStrategyBase):
             max_results: 最大结果数量
             tab: 结果标签页，about 为图片出处，similar 为相似图片
             family_mode: 安全搜索级别，off、moderate 或 strict
-            yandex_domain: Yandex 域名，留空时由 SerpAPI 决定
+            yandex_domain: Yandex 域名，留空或非法时回落到 yandex.ru
             no_cache: 是否绕过 SerpAPI 一小时缓存
         """
         super().__init__(
@@ -73,7 +83,12 @@ class YandexImagesStrategy(SerpApiStrategyBase):
             if normalized_family_mode in YANDEX_IMAGES_FAMILY_MODES
             else DEFAULT_YANDEX_IMAGES_FAMILY_MODE
         )
-        self.yandex_domain = str(yandex_domain or "").strip().lower()
+        normalized_domain = str(yandex_domain or "").strip().lower()
+        self.yandex_domain = (
+            normalized_domain
+            if normalized_domain in YANDEX_IMAGES_DOMAINS
+            else DEFAULT_YANDEX_IMAGES_DOMAIN
+        )
 
     def get_service_name(self) -> str:
         return "Yandex Images"
@@ -87,9 +102,8 @@ class YandexImagesStrategy(SerpApiStrategyBase):
             "url": image_url,
             "tab": self.tab,
             "family_mode": YANDEX_IMAGES_FAMILY_MODES[self.family_mode],
+            "yandex_domain": self.yandex_domain,
         }
-        if self.yandex_domain:
-            params["yandex_domain"] = self.yandex_domain
         return params
 
     def _parse_response(self, data: dict) -> list[SearchResultItem]:

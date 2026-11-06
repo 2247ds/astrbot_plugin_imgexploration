@@ -50,6 +50,9 @@ from astrbot_plugin_imgexploration.core.constant import (
     DEFAULT_YANDEX_IMAGES_NO_CACHE,
     DEFAULT_YANDEX_IMAGES_TAB,
 )
+from astrbot_plugin_imgexploration.core.providers.yandex_images_strategy import (
+    YANDEX_IMAGES_DOMAINS,
+)
 
 from tests.helpers import PluginTestCase
 
@@ -264,6 +267,14 @@ class PluginConfigurationTests(PluginTestCase):
         self.assertEqual(["about", "similar"], yandex_items["tab"]["options"])
         self.assertEqual(
             ["off", "moderate", "strict"], yandex_items["family_mode"]["options"]
+        )
+        self.assertEqual(
+            list(YANDEX_IMAGES_DOMAINS),
+            yandex_items["yandex_domain"]["options"],
+        )
+        self.assertIn(
+            yandex_items["yandex_domain"]["default"],
+            yandex_items["yandex_domain"]["options"],
         )
         self.assertEqual(
             {

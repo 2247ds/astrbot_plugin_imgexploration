@@ -49,7 +49,7 @@ class YandexImagesStrategyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(["yandex.ru"], query["yandex_domain"])
         self.assertEqual(["true"], query["no_cache"])
 
-    async def test_default_options_omit_domain_and_send_moderate_family_mode(
+    async def test_default_options_send_russian_domain_and_moderate_family_mode(
         self,
     ) -> None:
         strategy, session = self._strategy_with_statuses([200])
@@ -60,7 +60,27 @@ class YandexImagesStrategyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(["about"], query["tab"])
         self.assertEqual(["1"], query["family_mode"])
         self.assertEqual(["false"], query["no_cache"])
-        self.assertNotIn("yandex_domain", query)
+        self.assertEqual(["yandex.ru"], query["yandex_domain"])
+
+    async def test_blank_or_invalid_domain_falls_back_to_default(self) -> None:
+        for yandex_domain in ("", "   ", None, "invalid", "yandex.example"):
+            with self.subTest(yandex_domain=yandex_domain):
+                strategy, session = self._strategy_with_statuses(
+                    [200], yandex_domain=yandex_domain
+                )
+
+                await strategy.search("https://example.com/image.jpg")
+
+                self.assertEqual(["yandex.ru"], session.queries[0]["yandex_domain"])
+
+    async def test_domain_is_normalized(self) -> None:
+        strategy, session = self._strategy_with_statuses(
+            [200], yandex_domain=" YANDEX.BY "
+        )
+
+        await strategy.search("https://example.com/image.jpg")
+
+        self.assertEqual(["yandex.by"], session.queries[0]["yandex_domain"])
 
     async def test_family_mode_values_are_mapped(self) -> None:
         for family_mode, expected in (

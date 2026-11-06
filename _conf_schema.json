@@ -145,8 +145,16 @@
       "yandex_domain": {
         "type": "string",
         "description": "Yandex 域名",
-        "hint": "例如 yandex.ru、yandex.com.tr。留空时由 SerpAPI 决定（通常为 yandex.com）。",
-        "default": "",
+        "hint": "选择 Yandex 站点：yandex.ru 俄罗斯、yandex.com 国际、yandex.com.tr 土耳其、yandex.by 白俄罗斯、yandex.kz 哈萨克斯坦、yandex.uz 乌兹别克斯坦。默认 yandex.ru。",
+        "default": "yandex.ru",
+        "options": [
+          "yandex.ru",
+          "yandex.com",
+          "yandex.com.tr",
+          "yandex.by",
+          "yandex.kz",
+          "yandex.uz"
+        ],
         "condition": {"enable": true}
       },
       "no_cache": {

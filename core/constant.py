@@ -92,7 +92,7 @@ DEFAULT_YANDEX_IMAGES_MAX_RESULTS = 5
 # Yandex Images 搜索选项默认值；family_mode 与 SerpAPI 默认的 moderate 一致
 DEFAULT_YANDEX_IMAGES_TAB = "about"
 DEFAULT_YANDEX_IMAGES_FAMILY_MODE = "moderate"
-DEFAULT_YANDEX_IMAGES_DOMAIN = ""
+DEFAULT_YANDEX_IMAGES_DOMAIN = "yandex.ru"
 DEFAULT_YANDEX_IMAGES_NO_CACHE = False
 
 # ==============================================================================

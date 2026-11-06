@@ -120,7 +120,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 | `enable` | 布尔值 | 启用 Yandex Images | `false` |
 | `tab` | 字符串 | 结果标签页：`about` 查找图片出处，`similar` 只返回相似图片 | `about` |
 | `family_mode` | 字符串 | 安全搜索：`off`、`moderate`、`strict` | `moderate` |
-| `yandex_domain` | 字符串 | Yandex 域名，例如 `yandex.ru`；留空由 SerpAPI 决定 | 空 |
+| `yandex_domain` | 字符串 | Yandex 站点：`yandex.ru`、`yandex.com`、`yandex.com.tr`、`yandex.by`、`yandex.kz`、`yandex.uz` | `yandex.ru` |
 | `no_cache` | 布尔值 | 绕过 SerpAPI 一小时缓存 | `false` |
 | `max_results` | 整数 | 最大结果数量 | `5` |
 
