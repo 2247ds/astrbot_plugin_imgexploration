@@ -36,6 +36,14 @@ class DummyStrategy(ImageSearchStrategy):
         return self.items
 
 
+class PublicUrlStrategy(DummyStrategy):
+    """需要外部服务可公开访问图片 URL 的策略替身."""
+
+    @property
+    def requires_public_image_url(self) -> bool:
+        return True
+
+
 class SearchResultItemTests(unittest.TestCase):
     def test_with_thumbnail_bytes_returns_new_item(self) -> None:
         original = SearchResultItem(
@@ -354,3 +362,82 @@ class ImgExplorationServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.attempted_providers, ["Success", "Empty", "Fail"])
         self.assertEqual(result.failed_providers, ["Fail"])
         self.assertFalse(result.all_failed)
+
+    def test_default_strategy_does_not_require_public_image_url(self) -> None:
+        self.assertFalse(DummyStrategy("SauceNAO").requires_public_image_url)
+
+    async def test_explore_rehosts_image_for_public_url_strategies(self) -> None:
+        source_url = "https://multimedia.nt.qq.com.cn/download?fileid=x&rkey=y"
+        hosted_url = "https://files.catbox.moe/hosted.jpg"
+        yandex = PublicUrlStrategy("Yandex Images")
+        yandex.search = AsyncMock(return_value=[])
+        other = DummyStrategy("SauceNAO")
+        other.search = AsyncMock(return_value=[])
+        service = ImgExplorationService([yandex, other])
+
+        with patch(
+            "astrbot_plugin_imgexploration.core.service.get_publicly_hosted_image_url",
+            new=AsyncMock(return_value=hosted_url),
+        ) as rehost:
+            result = await service.explore(source_url)
+
+        rehost.assert_awaited_once_with(source_url)
+        yandex.search.assert_awaited_once_with(hosted_url)
+        other.search.assert_awaited_once_with(source_url)
+        self.assertEqual(result.attempted_providers, ["Yandex Images", "SauceNAO"])
+        self.assertEqual(result.user_notices, [])
+
+    async def test_explore_skips_public_url_strategy_when_rehost_fails(self) -> None:
+        source_url = "https://multimedia.nt.qq.com.cn/download?fileid=x&rkey=y"
+        yandex = PublicUrlStrategy("Yandex Images")
+        yandex.search = AsyncMock(return_value=[])
+        other = DummyStrategy("SauceNAO")
+        other.search = AsyncMock(return_value=[])
+        service = ImgExplorationService([yandex, other])
+
+        with patch(
+            "astrbot_plugin_imgexploration.core.service.get_publicly_hosted_image_url",
+            new=AsyncMock(return_value=None),
+        ):
+            result = await service.explore(source_url)
+
+        yandex.search.assert_not_awaited()
+        other.search.assert_awaited_once_with(source_url)
+        self.assertEqual(result.attempted_providers, ["SauceNAO"])
+        self.assertEqual(len(result.user_notices), 1)
+        self.assertIn("Yandex Images", result.user_notices[0])
+        self.assertIn("已跳过", result.user_notices[0])
+
+    async def test_explore_returns_notice_when_only_public_url_strategy_is_skipped(
+        self,
+    ) -> None:
+        yandex = PublicUrlStrategy("Yandex Images")
+        yandex.search = AsyncMock(return_value=[])
+        service = ImgExplorationService([yandex])
+
+        with patch(
+            "astrbot_plugin_imgexploration.core.service.get_publicly_hosted_image_url",
+            new=AsyncMock(return_value=None),
+        ):
+            result = await service.explore(
+                "https://multimedia.nt.qq.com.cn/download?fileid=x", ["yandex"]
+            )
+
+        yandex.search.assert_not_awaited()
+        self.assertEqual(result.items, [])
+        self.assertEqual(result.attempted_providers, [])
+        self.assertEqual(result.failed_providers, [])
+        self.assertFalse(result.all_failed)
+        self.assertEqual(len(result.user_notices), 1)
+
+    async def test_explore_does_not_rehost_without_public_url_strategies(self) -> None:
+        strategy = DummyStrategy("SauceNAO")
+        service = ImgExplorationService([strategy])
+
+        with patch(
+            "astrbot_plugin_imgexploration.core.service.get_publicly_hosted_image_url",
+            new=AsyncMock(return_value="https://files.catbox.moe/hosted.jpg"),
+        ) as rehost:
+            await service.explore("https://example.com/image.jpg")
+
+        rehost.assert_not_awaited()

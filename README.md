@@ -115,6 +115,8 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 
 通过 SerpAPI 调用 Yandex 反向搜图，与 Google Lens 共用 `serpapi.api_keys`。默认关闭；启用后无参数搜图会额外消耗一次 SerpAPI 额度。
 
+Yandex 由 SerpAPI 服务器拉取图片，因此该引擎被选中时，插件会先把图片上传到图床并改用图床 URL（即使原图已经是 HTTP URL，例如 QQ 的临时图片地址）。图床上传不可用时会跳过 Yandex，其它引擎不受影响。
+
 | 配置项 | 类型 | 说明 | 默认值 |
 |--------|------|------|--------|
 | `enable` | 布尔值 | 启用 Yandex Images | `false` |
@@ -212,6 +214,8 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 
 当搜图引擎需要 HTTP URL 时（如 SauceNAO、Google Lens、Yandex Images、trace.moe），如果用户发送的是本地文件、`file://` 路径或 `base64` 图片，插件会按 `upload_chain` 顺序将图片上传到第三方图床以获取公开可访问的 URL。当前内置图床为 **Catbox (catbox.moe)** 和 **Uguu (uguu.se)**。Uguu 单文件最大 128 MiB，上传文件默认保留 3 小时。
 
+Yandex Images 需要外部服务能够直接访问图片，因此只要该引擎被选中，即使原图已经是 HTTP URL（例如 QQ 的带 `rkey` 临时地址），插件也会先把图片上传到图床再发起搜索。
+
 **这意味着：**
 - 图片内容会暴露给配置的第三方图床
 - 配置多个图床时，前面的图床失败后图片可能被继续上传到后面的图床
@@ -223,7 +227,7 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 图片内容因此会提交给该站点，与是否启用第三方图床无关。
 
 **如何关闭：**
-在配置中设置 `allow_image_upload = false`，此时插件仅支持 HTTP URL 图片搜图，本地图片/base64 图片将被拒绝。
+在配置中设置 `allow_image_upload = false`，此时插件仅支持 HTTP URL 图片搜图，本地图片/base64 图片将被拒绝；需要图床公网地址的 Yandex Images 会被跳过。
 
 **建议：**
 - 对隐私敏感的场景，关闭此功能

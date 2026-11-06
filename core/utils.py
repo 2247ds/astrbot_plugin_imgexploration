@@ -515,3 +515,67 @@ async def get_http_image_url(source: str) -> str | None:
         return None
 
     return await upload_image(image_bytes)
+
+
+def _guess_image_type(data: bytes) -> tuple[str, str]:
+    """按文件头推断图片文件名和 MIME 类型.
+
+    Args:
+        data: 图片字节数据
+
+    Returns:
+        (filename, content_type)，无法识别时按 JPEG 处理
+    """
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image.png", "image/png"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "image.gif", "image/gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image.webp", "image/webp"
+    return "image.jpg", "image/jpeg"
+
+
+async def get_publicly_hosted_image_url(source: str) -> str | None:
+    """强制将图片上传到图床并返回托管 URL.
+
+    用于必须由外部服务拉取图片的引擎（如 Yandex）：无论 source 是否已经是
+    HTTP URL，都先把图片字节读取出来再上传，避免聊天平台的临时地址外部不可达。
+
+    注意：
+        上传受 allow_image_upload 总开关限制。任何失败都返回 None，
+        由调用方决定跳过对应引擎。
+
+    Args:
+        source: 图片源字符串
+
+    Returns:
+        图床返回的 HTTP(S) URL，失败返回 None
+    """
+    if not source:
+        return None
+
+    if not is_image_upload_allowed():
+        logger.warning(
+            "[ImgExploration] 图片上传已被禁用，需要对图片进行图床上传的引擎将被跳过。"
+            "如需使用该能力，请在配置中开启 allow_image_upload。"
+        )
+        return None
+
+    image_bytes = await read_image_bytes(source)
+    if not image_bytes:
+        logger.warning("[ImgExploration] 无法读取图片内容，跳过需要图床的引擎")
+        return None
+
+    filename, content_type = _guess_image_type(image_bytes)
+    hosted_url = await upload_image(
+        image_bytes,
+        filename=filename,
+        content_type=content_type,
+    )
+    if not hosted_url:
+        logger.warning("[ImgExploration] 图床上传失败，跳过需要图床的引擎")
+        return None
+
+    logger.info("[ImgExploration] 已为需要公网地址的引擎重新上传图片到图床")
+    logger.debug(f"[ImgExploration] 图床图片 URL: {hosted_url}")
+    return hosted_url

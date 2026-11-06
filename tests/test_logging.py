@@ -322,3 +322,18 @@ class LoggingPolicyTests(PluginTestCase):
         self.assertIn("Catbox", info_messages)
         self.assertNotIn(uploaded_url, info_messages)
         self.assertIn(uploaded_url, debug_messages)
+
+    async def test_public_image_url_failure_does_not_log_source_url(self) -> None:
+        with (
+            patch.object(utils, "is_image_upload_allowed", return_value=True),
+            patch.object(
+                utils, "read_image_bytes", new=AsyncMock(return_value=b"image")
+            ),
+            patch.object(utils, "upload_image", new=AsyncMock(return_value=None)),
+            patch.object(utils, "logger") as utils_logger,
+        ):
+            self.assertIsNone(await utils.get_publicly_hosted_image_url(self.image_url))
+
+        logged = _logged_text(utils_logger)
+        self.assertNotIn(self.image_url, logged)
+        self.assertNotIn("rkey=private-access-parameter", logged)

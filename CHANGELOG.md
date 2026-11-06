@@ -12,6 +12,10 @@
 
 - 图床上传成功后记录命中的图床名称（info 日志），上传后的完整 URL 记录在 debug 日志
 
+### 🐛 修复
+
+- 修复 Yandex Images 搜索聊天平台临时图片（如 QQ 带 `rkey` 的地址）时提示 “The URL does not refer to an image, or the image is not publicly accessible.”：选中 Yandex 时无条件将图片上传到图床并改用图床 URL；图床不可用时跳过 Yandex 并提示用户，其它引擎不受影响
+
 ### 🔄 变更
 
 - **Breaking:** SerpAPI Keys 从 `google_lens.serpapi_keys` 迁移到共享配置组 `serpapi.api_keys`，用于所有 SerpAPI 搜图引擎共享 Key 轮询与额度缓存；旧配置不会自动迁移，升级后需重新填写

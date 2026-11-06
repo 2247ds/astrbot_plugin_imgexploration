@@ -19,7 +19,11 @@ from .models import (
     SearchResultItem,
 )
 from .strategy import ImageSearchStrategy
-from .utils import DownloadTooLargeError, download_bytes
+from .utils import (
+    DownloadTooLargeError,
+    download_bytes,
+    get_publicly_hosted_image_url,
+)
 
 
 class ImgExplorationService:
@@ -137,6 +141,38 @@ class ImgExplorationService:
                 failed_providers=[],
             )
 
+        # 需要外部服务可公开访问图片的引擎（如 Yandex）必须使用图床 URL。
+        # 上传不可用时跳过这些引擎，避免它们用聊天平台的临时地址必然失败。
+        public_strategies = [
+            strategy
+            for strategy in strategies_to_use
+            if getattr(strategy, "requires_public_image_url", False)
+        ]
+        public_image_url = image_url
+        skip_notices: list[str] = []
+        if public_strategies:
+            hosted_url = await get_publicly_hosted_image_url(image_url)
+            if hosted_url:
+                public_image_url = hosted_url
+            else:
+                skipped_names = ", ".join(
+                    strategy.get_service_name() for strategy in public_strategies
+                )
+                strategies_to_use = [
+                    strategy
+                    for strategy in strategies_to_use
+                    if not getattr(strategy, "requires_public_image_url", False)
+                ]
+                skip_notices.append(
+                    f"{skipped_names} 需要可公开访问的图片地址，"
+                    "图床上传失败或已禁用，已跳过。"
+                )
+                logger.warning(
+                    f"[ImgExploration] 图床不可用，已跳过策略: {skipped_names}"
+                )
+                if not strategies_to_use:
+                    return ExplorationResult(user_notices=skip_notices)
+
         start_time = time.monotonic()
         strategy_names_str = ", ".join(s.get_service_name() for s in strategies_to_use)
         if not_found:
@@ -145,15 +181,22 @@ class ImgExplorationService:
         logger.debug(f"[ImgExploration] 搜图目标 URL: {image_url}")
 
         try:
-            # 并行调用所有策略
-            tasks = [strategy.search(image_url) for strategy in strategies_to_use]
+            # 并行调用所有策略；只有需要公网地址的引擎使用图床 URL
+            tasks = [
+                strategy.search(
+                    public_image_url
+                    if getattr(strategy, "requires_public_image_url", False)
+                    else image_url
+                )
+                for strategy in strategies_to_use
+            ]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
             # 聚合结果
             all_items: list[SearchResultItem] = []
             attempted_providers: list[str] = []
             failed_providers: list[str] = []
-            user_notices: list[str] = []
+            user_notices: list[str] = list(skip_notices)
 
             for i, result in enumerate(results_list):
                 provider_name = strategies_to_use[i].get_service_name()

@@ -90,6 +90,11 @@ class YandexImagesStrategy(SerpApiStrategyBase):
             else DEFAULT_YANDEX_IMAGES_DOMAIN
         )
 
+    @property
+    def requires_public_image_url(self) -> bool:
+        """Yandex 由 SerpAPI 服务器拉取图片，必须使用公网可达的地址."""
+        return True
+
     def get_service_name(self) -> str:
         return "Yandex Images"
 

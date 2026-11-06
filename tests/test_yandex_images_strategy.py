@@ -30,6 +30,12 @@ class YandexImagesStrategyTest(unittest.IsolatedAsyncioTestCase):
         )
         return strategy, session
 
+    async def test_requires_public_image_url(self) -> None:
+        client = self.env.serpapi.SerpApiClient(api_keys=["key-a"])
+        strategy = self.yandex.YandexImagesStrategy(serpapi_client=client)
+
+        self.assertTrue(strategy.requires_public_image_url)
+
     async def test_search_options_are_sent_to_serpapi(self) -> None:
         strategy, session = self._strategy_with_statuses(
             [200],

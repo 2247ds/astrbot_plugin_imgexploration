@@ -24,6 +24,11 @@ class ImageSearchStrategy(ABC):
     - 结果项只需填写缩略图 URL，缩略图由服务层统一下载
     """
 
+    @property
+    def requires_public_image_url(self) -> bool:
+        """搜索前是否需要外部服务可公开访问的图片 URL."""
+        return False
+
     @abstractmethod
     def get_service_name(self) -> str:
         """获取策略名称 (用于日志或显示).

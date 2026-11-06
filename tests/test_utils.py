@@ -18,6 +18,7 @@ from astrbot_plugin_imgexploration.core.utils import (
     get_bot_api,
     get_http_image_url,
     get_proxy_url,
+    get_publicly_hosted_image_url,
     is_aiocqhttp_platform,
     is_image_upload_allowed,
     is_local_file_access_allowed,
@@ -402,3 +403,92 @@ class UtilsUploadAndGetUrlTests(unittest.IsolatedAsyncioTestCase):
         ):
             url = await get_http_image_url("base64://abc")
             self.assertEqual(url, "https://uploaded.moe/1.jpg")
+
+    async def test_get_publicly_hosted_image_url_uploads_any_source(self) -> None:
+        self.assertIsNone(await get_publicly_hosted_image_url(""))
+
+        # 上传总开关关闭时不上传，也不把临时 URL 交给外部引擎
+        set_allow_image_upload(False)
+        self.assertIsNone(
+            await get_publicly_hosted_image_url("https://example.com/image.jpg")
+        )
+
+        set_allow_image_upload(True)
+        read = AsyncMock(return_value=b"\xff\xd8\xffimage")
+        upload = AsyncMock(return_value="https://uploaded.moe/1.jpg")
+        with (
+            patch(
+                "astrbot_plugin_imgexploration.core.utils.read_image_bytes",
+                new=read,
+            ),
+            patch(
+                "astrbot_plugin_imgexploration.core.utils.upload_image",
+                new=upload,
+            ),
+        ):
+            url = await get_publicly_hosted_image_url("https://example.com/image.jpg")
+
+        self.assertEqual(url, "https://uploaded.moe/1.jpg")
+        read.assert_awaited_once_with("https://example.com/image.jpg")
+        upload.assert_awaited_once()
+        self.assertEqual(upload.await_args.kwargs["filename"], "image.jpg")
+        self.assertEqual(upload.await_args.kwargs["content_type"], "image/jpeg")
+
+    async def test_get_publicly_hosted_image_url_failures_return_none(self) -> None:
+        set_allow_image_upload(True)
+        upload = AsyncMock(return_value="https://uploaded.moe/1.jpg")
+
+        with (
+            patch(
+                "astrbot_plugin_imgexploration.core.utils.read_image_bytes",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "astrbot_plugin_imgexploration.core.utils.upload_image",
+                new=upload,
+            ),
+        ):
+            self.assertIsNone(
+                await get_publicly_hosted_image_url("https://example.com/image.jpg")
+            )
+        upload.assert_not_awaited()
+
+        with (
+            patch(
+                "astrbot_plugin_imgexploration.core.utils.read_image_bytes",
+                new=AsyncMock(return_value=b"image"),
+            ),
+            patch(
+                "astrbot_plugin_imgexploration.core.utils.upload_image",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            self.assertIsNone(
+                await get_publicly_hosted_image_url("https://example.com/image.jpg")
+            )
+
+    async def test_get_publicly_hosted_image_url_guesses_image_type(self) -> None:
+        set_allow_image_upload(True)
+        cases = (
+            (b"\x89PNG\r\n\x1a\nrest", "image.png", "image/png"),
+            (b"GIF89a-rest", "image.gif", "image/gif"),
+            (b"RIFF\x00\x00\x00\x00WEBPrest", "image.webp", "image/webp"),
+            (b"unknown", "image.jpg", "image/jpeg"),
+        )
+        for data, filename, content_type in cases:
+            with self.subTest(content_type=content_type):
+                upload = AsyncMock(return_value="https://uploaded.moe/1.jpg")
+                with (
+                    patch(
+                        "astrbot_plugin_imgexploration.core.utils.read_image_bytes",
+                        new=AsyncMock(return_value=data),
+                    ),
+                    patch(
+                        "astrbot_plugin_imgexploration.core.utils.upload_image",
+                        new=upload,
+                    ),
+                ):
+                    await get_publicly_hosted_image_url("base64://abc")
+
+                self.assertEqual(upload.await_args.kwargs["filename"], filename)
+                self.assertEqual(upload.await_args.kwargs["content_type"], content_type)
