@@ -180,18 +180,28 @@ class EHentaiStrategyTests(unittest.IsolatedAsyncioTestCase):
         session.post.assert_awaited_once()
         args, kwargs = session.post.await_args
         self.assertEqual(args[0], EHENTAI_UPLOAD_URL)
-        self.assertEqual(
-            kwargs["data"],
-            {
-                "f_sfile": "File Search",
-                "fs_covers": "on",
-                "fs_exp": "on",
-            },
+        self.assertNotIn("files", kwargs)
+
+        body = kwargs["data"]
+        self.assertIsInstance(body, bytes)
+        content_type = kwargs["headers"]["Content-Type"]
+        self.assertTrue(content_type.startswith("multipart/form-data; boundary="))
+        boundary = content_type.split("boundary=", 1)[1]
+        self.assertIn(
+            b'Content-Disposition: form-data; name="f_sfile"\r\n\r\nFile Search\r\n',
+            body,
         )
-        self.assertEqual(
-            kwargs["files"],
-            {"sfile": ("image.jpg", b"image-bytes", "application/octet-stream")},
+        self.assertIn(b'Content-Disposition: form-data; name="fs_covers"', body)
+        self.assertIn(b'Content-Disposition: form-data; name="fs_exp"', body)
+        self.assertNotIn(b'Content-Disposition: form-data; name="fs_similar"', body)
+        self.assertIn(b'name="sfile"; filename="image.jpg"', body)
+        self.assertIn(
+            b"Content-Type: application/octet-stream\r\n\r\nimage-bytes",
+            body,
         )
+        self.assertTrue(body.startswith(f"--{boundary}\r\n".encode()))
+        self.assertTrue(body.endswith(f"\r\n--{boundary}--\r\n".encode()))
+
         self.assertEqual(kwargs["cookies"], {"a": "1", "b": "2"})
         self.assertTrue(kwargs["allow_redirects"])
 
@@ -202,10 +212,13 @@ class EHentaiStrategyTests(unittest.IsolatedAsyncioTestCase):
         _, session, _ = await self._run_search(strategy, response)
 
         _, kwargs = session.post.await_args
-        self.assertEqual(
-            kwargs["data"],
-            {"f_sfile": "File Search", "fs_similar": "on"},
+        self.assertNotIn("files", kwargs)
+        self.assertIn(
+            b'Content-Disposition: form-data; name="fs_similar"', kwargs["data"]
         )
+        self.assertIn(b'Content-Disposition: form-data; name="f_sfile"', kwargs["data"])
+        self.assertNotIn(b'name="fs_covers"', kwargs["data"])
+        self.assertNotIn(b'name="fs_exp"', kwargs["data"])
         self.assertIsNone(kwargs["cookies"])
 
     async def test_exhentai_endpoint_and_source(self) -> None:

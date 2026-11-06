@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import urllib.parse
+import uuid
 
 from astrbot.api import logger
 from bs4 import BeautifulSoup
@@ -26,6 +27,39 @@ from ..utils import DownloadTooLargeError, download_bytes, get_proxy_url
 _NO_RESULT_MARKERS = ("no unfiltered results", "no hits found")
 _CLOUDFLARE_MARKERS = ("just a moment", "cf-chl", "challenge-platform")
 _MAX_TAGS = 10
+
+
+def build_multipart_body(
+    fields: dict[str, str],
+    *,
+    file_field: str,
+    filename: str,
+    file_bytes: bytes,
+    content_type: str,
+) -> tuple[bytes, str]:
+    """构造 multipart/form-data 请求体.
+
+    curl_cffi 的 AsyncSession 不支持 ``files=``，因此直接编码请求体，
+    避免依赖不同版本的多部分上传 API。
+    """
+    boundary = f"----imgexploration{uuid.uuid4().hex}"
+    chunks: list[bytes] = []
+    for name, value in fields.items():
+        chunks.append(f"--{boundary}\r\n".encode())
+        chunks.append(f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode())
+        chunks.append(str(value).encode())
+        chunks.append(b"\r\n")
+    chunks.append(f"--{boundary}\r\n".encode())
+    chunks.append(
+        (
+            f'Content-Disposition: form-data; name="{file_field}"; '
+            f'filename="{filename}"\r\n'
+        ).encode()
+    )
+    chunks.append(f"Content-Type: {content_type}\r\n\r\n".encode())
+    chunks.append(file_bytes)
+    chunks.append(f"\r\n--{boundary}--\r\n".encode())
+    return b"".join(chunks), f"multipart/form-data; boundary={boundary}"
 
 
 def parse_cookie_header(raw: str) -> dict[str, str]:
@@ -157,16 +191,20 @@ class EHentaiStrategy(ImageSearchStrategy):
             data["fs_similar"] = "on"
         if self.search_exp:
             data["fs_exp"] = "on"
-        files = {
-            "sfile": ("image.jpg", image_bytes, "application/octet-stream"),
-        }
+        body, content_type_header = build_multipart_body(
+            data,
+            file_field="sfile",
+            filename="image.jpg",
+            file_bytes=image_bytes,
+            content_type="application/octet-stream",
+        )
 
         try:
             session = await self._get_session()
             response = await session.post(
                 self._upload_url,
-                data=data,
-                files=files,
+                data=body,
+                headers={"Content-Type": content_type_header},
                 cookies=self.cookies or None,
                 allow_redirects=True,
             )
