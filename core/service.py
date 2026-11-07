@@ -86,10 +86,9 @@ class ImgExplorationService:
 
         for name in names:
             name_lower = name.lower().strip()
-            # 先通过别名映射
-            canonical_name = STRATEGY_ALIAS_MAP.get(name_lower, name_lower)
-            # 查找策略
-            strategy = self._strategy_map.get(canonical_name.lower())
+            # 映射值保留 get_service_name() 的原始大小写，索引键统一小写
+            canonical_name = STRATEGY_ALIAS_MAP.get(name_lower, name_lower).lower()
+            strategy = self._strategy_map.get(canonical_name)
             if strategy:
                 # 已找到策略，避免重复添加
                 if strategy not in resolved:

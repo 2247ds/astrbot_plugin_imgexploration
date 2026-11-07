@@ -140,7 +140,7 @@ DEFAULT_TRACE_MOE_MAX_RESULTS = 3
 # 策略名称映射
 # ==============================================================================
 
-# 策略名称映射 (小写 -> 策略类名关键字)
+# 策略别名映射 (别名小写 -> get_service_name() 返回值，查找时不区分大小写)
 STRATEGY_ALIAS_MAP = {
     "saucenao": "SauceNAO",
     "sauce": "SauceNAO",
