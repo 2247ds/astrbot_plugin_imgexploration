@@ -123,8 +123,15 @@
       "enable": {
         "type": "bool",
         "description": "启用 Yandex Images 搜索",
-        "hint": "默认关闭。启用后无参数搜图会额外消耗一次 SerpAPI 额度，也可用「搜图 yandex」单独调用。需要先在「SerpAPI 配置」中填写 API Keys，未填写时不会启用。",
+        "hint": "默认关闭。启用后可用「搜图 yandex」单独调用；是否参与无参数搜图由「Yandex Images 参与默认搜图」决定。需要先在「SerpAPI 配置」中填写 API Keys，未填写时不会启用。",
         "default": false
+      },
+      "include_in_default": {
+        "type": "bool",
+        "description": "Yandex Images 参与默认搜图",
+        "hint": "关闭时仅明确指定 yandex 才调用；开启后无参数搜图也会调用并额外消耗一次 SerpAPI 额度。",
+        "default": false,
+        "condition": {"enable": true}
       },
       "tab": {
         "type": "string",

@@ -37,6 +37,7 @@ from .core.constant import (
     DEFAULT_EHENTAI_INCLUDE_IN_DEFAULT,
     DEFAULT_LLM_TOOL_RESPONSE_MODE,
     DEFAULT_TRACE_MOE_INCLUDE_IN_DEFAULT,
+    DEFAULT_YANDEX_IMAGES_INCLUDE_IN_DEFAULT,
 )
 from .core.image_context import ImageRequest, get_image_context_manager
 from .core.service import ImgExplorationService
@@ -116,11 +117,21 @@ class ImgExplorationPlugin(Star):
             )
             is True
         )
+        include_yandex = (
+            get_nested_config(
+                self.config,
+                "yandex_images",
+                "include_in_default",
+                default=DEFAULT_YANDEX_IMAGES_INCLUDE_IN_DEFAULT,
+            )
+            is True
+        )
         excluded_from_default = {
             name
             for name, included in (
                 ("trace.moe", include_trace),
                 ("E-Hentai", include_ehentai),
+                ("Yandex Images", include_yandex),
             )
             if not included
         }

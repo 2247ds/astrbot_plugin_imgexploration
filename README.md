@@ -113,13 +113,20 @@ SerpAPI 相关引擎共享同一组 API Keys 与额度。多个 Key 会按顺序
 
 ### Yandex Images（`yandex_images`）
 
-通过 SerpAPI 调用 Yandex 反向搜图，与 Google Lens 共用 `serpapi.api_keys`。默认关闭；启用后无参数搜图会额外消耗一次 SerpAPI 额度。
+通过 SerpAPI 调用 Yandex 反向搜图，与 Google Lens 共用 `serpapi.api_keys`。默认关闭；启用后可用 `搜图 yandex` 单独调用，是否参与无参数搜图由 `include_in_default` 决定。
 
 Yandex 由 SerpAPI 服务器拉取图片，因此该引擎被选中时，插件会先把图片上传到图床并改用图床 URL（即使原图已经是 HTTP URL，例如 QQ 的临时图片地址）。图床上传不可用时会跳过 Yandex，其它引擎不受影响。
+
+| `enable` | `include_in_default` | 行为 |
+|---|---|---|
+| 关闭 | 任意 | 不加载 Yandex Images，命令和 AI 均无法调用 |
+| 开启 | 关闭 | 仅明确指定 `yandex` 时调用 |
+| 开启 | 开启 | 无参数 `搜图` 也会调用并消耗一次 SerpAPI 额度 |
 
 | 配置项 | 类型 | 说明 | 默认值 |
 |--------|------|------|--------|
 | `enable` | 布尔值 | 启用 Yandex Images | `false` |
+| `include_in_default` | 布尔值 | 参与无参数搜图 | `false` |
 | `tab` | 字符串 | 结果标签页：`about` 查找图片出处，`similar` 只返回相似图片 | `about` |
 | `family_mode` | 字符串 | 安全搜索：`off`、`moderate`、`strict` | `moderate` |
 | `yandex_domain` | 字符串 | Yandex 站点：`yandex.ru`、`yandex.com`、`yandex.com.tr`、`yandex.by`、`yandex.kz`、`yandex.uz` | `yandex.ru` |

@@ -46,6 +46,7 @@ from astrbot_plugin_imgexploration.core.constant import (
     DEFAULT_TRACE_MOE_MAX_RESULTS,
     DEFAULT_YANDEX_IMAGES_DOMAIN,
     DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
+    DEFAULT_YANDEX_IMAGES_INCLUDE_IN_DEFAULT,
     DEFAULT_YANDEX_IMAGES_MAX_RESULTS,
     DEFAULT_YANDEX_IMAGES_NO_CACHE,
     DEFAULT_YANDEX_IMAGES_TAB,
@@ -279,6 +280,7 @@ class PluginConfigurationTests(PluginTestCase):
         self.assertEqual(
             {
                 "enable": DEFAULT_ENABLE_YANDEX_IMAGES,
+                "include_in_default": DEFAULT_YANDEX_IMAGES_INCLUDE_IN_DEFAULT,
                 "tab": DEFAULT_YANDEX_IMAGES_TAB,
                 "family_mode": DEFAULT_YANDEX_IMAGES_FAMILY_MODE,
                 "yandex_domain": DEFAULT_YANDEX_IMAGES_DOMAIN,
@@ -286,10 +288,18 @@ class PluginConfigurationTests(PluginTestCase):
             },
             {
                 key: yandex_items[key]["default"]
-                for key in ("enable", "tab", "family_mode", "yandex_domain", "no_cache")
+                for key in (
+                    "enable",
+                    "include_in_default",
+                    "tab",
+                    "family_mode",
+                    "yandex_domain",
+                    "no_cache",
+                )
             },
         )
         self.assertFalse(yandex_items["enable"]["default"])
+        self.assertFalse(yandex_items["include_in_default"]["default"])
 
     def test_serpapi_schema_uses_shared_keys_group(self) -> None:
         schema_path = Path(__file__).parents[1] / "_conf_schema.json"

@@ -86,6 +86,9 @@ DEFAULT_GOOGLE_LENS_NO_CACHE = False
 # Yandex Images 默认关闭，避免升级后默认搜图额外消耗 SerpAPI 额度
 DEFAULT_ENABLE_YANDEX_IMAGES = False
 
+# Yandex Images 是否参与无参数默认搜图
+DEFAULT_YANDEX_IMAGES_INCLUDE_IN_DEFAULT = False
+
 # Yandex Images 默认结果上限
 DEFAULT_YANDEX_IMAGES_MAX_RESULTS = 5
 
